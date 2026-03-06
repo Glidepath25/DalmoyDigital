@@ -30,6 +30,25 @@ model User {
   createdProjects  Project[]      @relation("project_created_by")
   updatedProjects  Project[]      @relation("project_updated_by")
 
+  seniorManagedProjects   Project[] @relation("project_senior_manager")
+  siteManagedProjects     Project[] @relation("project_site_manager")
+  contractManagedProjects Project[] @relation("project_contract_manager")
+
+  uploadedAttachments   ProjectAttachment[]     @relation("attachment_uploaded_by")
+  createdCorrespondence ProjectCorrespondence[] @relation("correspondence_created_by")
+
+  createdMilestones ProjectMilestone[] @relation("milestone_created_by")
+  updatedMilestones ProjectMilestone[] @relation("milestone_updated_by")
+
+  ownedActionItems   ProjectActionItem[] @relation("action_owner")
+  createdActionItems ProjectActionItem[] @relation("action_created_by")
+  updatedActionItems ProjectActionItem[] @relation("action_updated_by")
+
+  createdFinanceLines ProjectFinanceLine[] @relation("finance_created_by")
+  updatedFinanceLines ProjectFinanceLine[] @relation("finance_updated_by")
+
+  completedInspectionReports SiteInspectionReport[] @relation("inspection_completed_by")
+
   @@map("users")
 }
 
@@ -178,9 +197,19 @@ model Project {
 
   clientId String @db.Uuid @map("client_id")
   statusId String @db.Uuid @map("status_id")
+  ragOptionId String? @db.Uuid @map("rag_option_id")
+
+  seniorManagerUserId   String? @db.Uuid @map("senior_manager_user_id")
+  siteManagerUserId     String? @db.Uuid @map("site_manager_user_id")
+  contractManagerUserId String? @db.Uuid @map("contract_manager_user_id")
 
   client Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
   status ProjectStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  ragOption LookupOption? @relation(fields: [ragOptionId], references: [id], onDelete: SetNull)
+
+  seniorManagerUser   User? @relation("project_senior_manager", fields: [seniorManagerUserId], references: [id], onDelete: SetNull)
+  siteManagerUser     User? @relation("project_site_manager", fields: [siteManagerUserId], references: [id], onDelete: SetNull)
+  contractManagerUser User? @relation("project_contract_manager", fields: [contractManagerUserId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -190,8 +219,214 @@ model Project {
   createdBy   User?   @relation("project_created_by", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy   User?   @relation("project_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
 
+  correspondence ProjectCorrespondence[]
+  milestones     ProjectMilestone[]
+  actionItems    ProjectActionItem[]
+  financeLines   ProjectFinanceLine[]
+  attachments    ProjectAttachment[]
+  inspectionReports SiteInspectionReport[]
+
   @@index([clientId])
   @@index([statusId])
   @@index([dueDate])
+  @@index([ragOptionId])
   @@map("projects")
+}
+
+model StoredFile {
+  id              String   @id @default(uuid()) @db.Uuid @map("id")
+  storageProvider String   @map("storage_provider")
+  storageKey      String   @unique @map("storage_key")
+  originalName    String   @map("original_name")
+  mimeType        String?  @map("mime_type")
+  sizeBytes       Int?     @map("size_bytes")
+
+  uploadedById String? @db.Uuid @map("uploaded_by_id")
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attachments ProjectAttachment[]
+  inspectionItemPhotos SiteInspectionItem[] @relation("inspection_item_photo")
+
+  @@map("stored_files")
+}
+
+model ProjectAttachment {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+  fileId    String @db.Uuid @map("file_id")
+  categoryOptionId String? @db.Uuid @map("category_option_id")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    StoredFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  categoryOption LookupOption? @relation(fields: [categoryOptionId], references: [id], onDelete: SetNull)
+
+  uploadedById String? @db.Uuid @map("uploaded_by_id")
+  uploadedBy   User?   @relation("attachment_uploaded_by", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([categoryOptionId])
+  @@map("project_attachments")
+}
+
+model ProjectCorrespondence {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  fromAddress String @map("from_address")
+  toAddress   String @map("to_address")
+  subject     String @map("subject")
+  bodyText    String? @map("body_text")
+  aiSummary   String? @map("ai_summary")
+  occurredAt  DateTime @map("occurred_at")
+
+  sourceType String @map("source_type") // manual | inbound_email | outbound_email
+  externalMessageId String? @map("external_message_id")
+  externalThreadId  String? @map("external_thread_id")
+  provider          String? @map("provider")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  createdBy   User?   @relation("correspondence_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId, occurredAt])
+  @@map("project_correspondence")
+}
+
+model ProjectMilestone {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  milestoneKey String @map("milestone_key")
+  milestoneName String @map("milestone_name")
+  sortOrder Int @default(0) @map("sort_order")
+
+  ragOptionId String? @db.Uuid @map("rag_option_id")
+  ragOption   LookupOption? @relation(fields: [ragOptionId], references: [id], onDelete: SetNull)
+
+  programStart    DateTime? @map("program_start")
+  forecastStart   DateTime? @map("forecast_start")
+  programFinish   DateTime? @map("program_finish")
+  forecastFinish  DateTime? @map("forecast_finish")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("milestone_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("milestone_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, milestoneKey])
+  @@index([projectId, sortOrder])
+  @@map("project_milestones")
+}
+
+model ProjectActionItem {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  title String @map("title")
+  statusOptionId String? @db.Uuid @map("status_option_id")
+  priorityOptionId String? @db.Uuid @map("priority_option_id")
+
+  ownerUserId String? @db.Uuid @map("owner_user_id")
+  ownerUser   User?   @relation("action_owner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+
+  requiredClosureDate DateTime? @map("required_closure_date")
+  actualClosureDate   DateTime? @map("actual_closure_date")
+
+  statusOption   LookupOption? @relation("action_status_option", fields: [statusOptionId], references: [id], onDelete: SetNull)
+  priorityOption LookupOption? @relation("action_priority_option", fields: [priorityOptionId], references: [id], onDelete: SetNull)
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("action_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("action_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([statusOptionId])
+  @@index([priorityOptionId])
+  @@map("project_action_items")
+}
+
+model ProjectFinanceLine {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  item     String @map("item")
+  supplier String? @map("supplier")
+
+  tenderedCost Decimal? @db.Decimal(14, 2) @map("tendered_cost")
+  qty          Decimal? @db.Decimal(14, 2) @map("qty")
+  actualCost   Decimal? @db.Decimal(14, 2) @map("actual_cost")
+  invoicedCost Decimal? @db.Decimal(14, 2) @map("invoiced_cost")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("finance_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("finance_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("project_finance_lines")
+}
+
+model SiteInspectionReport {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  completedByUserId String? @db.Uuid @map("completed_by_user_id")
+  completedByUser   User?   @relation("inspection_completed_by", fields: [completedByUserId], references: [id], onDelete: SetNull)
+
+  inspectionDate DateTime @map("inspection_date")
+  projectReferenceSnapshot String @map("project_reference_snapshot")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items   SiteInspectionItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId, inspectionDate])
+  @@map("site_inspection_reports")
+}
+
+model SiteInspectionItem {
+  id       String @id @default(uuid()) @db.Uuid @map("id")
+  reportId String @db.Uuid @map("report_id")
+
+  itemTitle String @map("item_title")
+  comment   String? @map("comment")
+
+  photoFileId String? @db.Uuid @map("photo_file_id")
+  photoFile   StoredFile? @relation("inspection_item_photo", fields: [photoFileId], references: [id], onDelete: SetNull)
+
+  report SiteInspectionReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([reportId])
+  @@map("site_inspection_items")
 }

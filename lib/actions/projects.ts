@@ -8,6 +8,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
+import { DEFAULT_PROGRAMME_MILESTONES } from "@/lib/project-workspace/milestones";
 
 const CreateProjectSchema = z.object({
   reference: z.string().trim().min(1).max(50),
@@ -69,6 +70,28 @@ export async function createProject(origin: "admin" | "app", formData: FormData)
 
     projectId = project.id;
     console.info("[createProject] created", { origin, userId, projectId, reference: project.reference });
+
+    try {
+      await db.projectMilestone.createMany({
+        data: DEFAULT_PROGRAMME_MILESTONES.map((m) => ({
+          projectId: project.id,
+          milestoneKey: m.key,
+          milestoneName: m.name,
+          sortOrder: m.sortOrder,
+          createdById: userId,
+          updatedById: userId
+        })),
+        skipDuplicates: true
+      });
+      console.info("[createProject] milestones initialised", { origin, userId, projectId });
+    } catch (milestoneErr) {
+      console.warn("[createProject] milestone init failed (non-fatal)", {
+        origin,
+        userId,
+        projectId,
+        err: milestoneErr
+      });
+    }
   } catch (err) {
     console.error("[createProject] create failed", { origin, userId, err });
 

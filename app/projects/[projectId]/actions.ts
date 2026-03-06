@@ -15,6 +15,10 @@ const UpdateProjectSchema = z.object({
   notes: z.string().trim().max(5000).optional().or(z.literal("")),
   clientId: z.string().uuid(),
   statusId: z.string().uuid(),
+  ragOptionId: z.string().uuid().optional().or(z.literal("")),
+  seniorManagerUserId: z.string().uuid().optional().or(z.literal("")),
+  siteManagerUserId: z.string().uuid().optional().or(z.literal("")),
+  contractManagerUserId: z.string().uuid().optional().or(z.literal("")),
   dueDate: z.string().optional().or(z.literal(""))
 });
 
@@ -29,6 +33,10 @@ export async function updateProject(projectId: string, formData: FormData) {
     notes: formData.get("notes"),
     clientId: formData.get("clientId"),
     statusId: formData.get("statusId"),
+    ragOptionId: formData.get("ragOptionId"),
+    seniorManagerUserId: formData.get("seniorManagerUserId"),
+    siteManagerUserId: formData.get("siteManagerUserId"),
+    contractManagerUserId: formData.get("contractManagerUserId"),
     dueDate: formData.get("dueDate")
   });
 
@@ -46,6 +54,10 @@ export async function updateProject(projectId: string, formData: FormData) {
         notes: parsed.data.notes || null,
         clientId: parsed.data.clientId,
         statusId: parsed.data.statusId,
+        ragOptionId: parsed.data.ragOptionId || null,
+        seniorManagerUserId: parsed.data.seniorManagerUserId || null,
+        siteManagerUserId: parsed.data.siteManagerUserId || null,
+        contractManagerUserId: parsed.data.contractManagerUserId || null,
         dueDate,
         updatedById: userId
       }
@@ -58,4 +70,3 @@ export async function updateProject(projectId: string, formData: FormData) {
   revalidatePath("/dashboard");
   redirect(`/projects/${projectId}?saved=1`);
 }
-

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 
 import { hashPassword } from "../lib/password";
+import { DEFAULT_PROGRAMME_MILESTONES } from "../lib/project-workspace/milestones";
+import { storeLocalBuffer } from "../lib/storage/local";
 
 const db = new PrismaClient();
 
@@ -17,6 +19,56 @@ async function upsertRole(key: string, name: string, description: string) {
     where: { key },
     update: { name, description, isSystem: true },
     create: { key, name, description, isSystem: true }
+  });
+}
+
+async function upsertLookupType(params: { key: string; name: string; description?: string; createdById: string; updatedById: string }) {
+  return db.lookupType.upsert({
+    where: { key: params.key },
+    update: {
+      name: params.name,
+      description: params.description ?? null,
+      isActive: true,
+      archivedAt: null,
+      updatedById: params.updatedById
+    },
+    create: {
+      key: params.key,
+      name: params.name,
+      description: params.description ?? null,
+      isActive: true,
+      createdById: params.createdById,
+      updatedById: params.updatedById
+    }
+  });
+}
+
+async function upsertLookupOption(params: {
+  lookupTypeId: string;
+  label: string;
+  value: string;
+  sortOrder: number;
+  createdById: string;
+  updatedById: string;
+}) {
+  return db.lookupOption.upsert({
+    where: { lookupTypeId_value: { lookupTypeId: params.lookupTypeId, value: params.value } },
+    update: {
+      label: params.label,
+      sortOrder: params.sortOrder,
+      isActive: true,
+      archivedAt: null,
+      updatedById: params.updatedById
+    },
+    create: {
+      lookupTypeId: params.lookupTypeId,
+      label: params.label,
+      value: params.value,
+      sortOrder: params.sortOrder,
+      isActive: true,
+      createdById: params.createdById,
+      updatedById: params.updatedById
+    }
   });
 }
 
@@ -232,25 +284,25 @@ async function main() {
   const demoProjects = [
     {
       reference: "DD-0001",
-      name: "Acme Retail • Store Refurb",
+      name: "Acme Retail \u2022 Store Refurb",
       clientId: clientA.id,
       statusId: stCosting.id
     },
     {
       reference: "DD-0002",
-      name: "Northside Offices • 3rd Floor Fitout",
+      name: "Northside Offices \u2022 3rd Floor Fitout",
       clientId: clientB.id,
       statusId: stInProgress.id
     },
     {
       reference: "DD-0003",
-      name: "Dalmoy Demo • Reception Area",
+      name: "Dalmoy Demo \u2022 Reception Area",
       clientId: clientC.id,
       statusId: stSnagging.id
     },
     {
       reference: "DD-0004",
-      name: "Acme Retail • Back of House Upgrade",
+      name: "Acme Retail \u2022 Back of House Upgrade",
       clientId: clientA.id,
       statusId: stComplete.id
     }
@@ -276,6 +328,349 @@ async function main() {
         updatedById: adminUser.id
       }
     });
+  }
+
+  // Workspace lookups (admin-managed dropdowns)
+  const ragType = await upsertLookupType({
+    key: "project_rag",
+    name: "Project RAG",
+    description: "Red/Amber/Green project health indicator",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+  const actionStatusType = await upsertLookupType({
+    key: "action_status",
+    name: "Action status",
+    description: "Status values for critical action items",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+  const actionPriorityType = await upsertLookupType({
+    key: "action_priority",
+    name: "Action priority",
+    description: "Priority values for critical action items",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+  const attachmentCategoryType = await upsertLookupType({
+    key: "attachment_category",
+    name: "Attachment category",
+    description: "Attachment categories for project document uploads",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+
+  const [ragGreen, ragAmber, ragRed] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: ragType.id,
+      label: "Green",
+      value: "green",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: ragType.id,
+      label: "Amber",
+      value: "amber",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: ragType.id,
+      label: "Red",
+      value: "red",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const [actOpen, actInProgress, actBlocked, actClosed] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: actionStatusType.id,
+      label: "Open",
+      value: "open",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: actionStatusType.id,
+      label: "In Progress",
+      value: "in_progress",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: actionStatusType.id,
+      label: "Blocked",
+      value: "blocked",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: actionStatusType.id,
+      label: "Closed",
+      value: "closed",
+      sortOrder: 40,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const [prioLow, prioMedium, prioHigh, prioCritical] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: actionPriorityType.id,
+      label: "Low",
+      value: "low",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: actionPriorityType.id,
+      label: "Medium",
+      value: "medium",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: actionPriorityType.id,
+      label: "High",
+      value: "high",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: actionPriorityType.id,
+      label: "Critical",
+      value: "critical",
+      sortOrder: 40,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const [catDrawings, catPhotos, catRfi, catHandover] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: attachmentCategoryType.id,
+      label: "Drawings",
+      value: "drawings",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: attachmentCategoryType.id,
+      label: "Site Photos",
+      value: "site_photos",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: attachmentCategoryType.id,
+      label: "RFI",
+      value: "rfi",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: attachmentCategoryType.id,
+      label: "Handover",
+      value: "handover",
+      sortOrder: 40,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const projects = await db.project.findMany({ orderBy: [{ reference: "asc" }] });
+  const managerUser = userByEmail.get("manager@dalmoy.local") ?? adminUser;
+
+  for (const p of projects) {
+    const milestoneCount = await db.projectMilestone.count({ where: { projectId: p.id } });
+    if (milestoneCount === 0) {
+      await db.projectMilestone.createMany({
+        data: DEFAULT_PROGRAMME_MILESTONES.map((m) => ({
+          projectId: p.id,
+          milestoneKey: m.key,
+          milestoneName: m.name,
+          sortOrder: m.sortOrder,
+          ragOptionId: p.reference === "DD-0003" ? ragAmber.id : p.reference === "DD-0002" ? ragGreen.id : null,
+          createdById: adminUser.id,
+          updatedById: adminUser.id
+        }))
+      });
+    }
+
+    await db.project.update({
+      where: { id: p.id },
+      data: {
+        ragOptionId:
+          p.reference === "DD-0003"
+            ? ragAmber.id
+            : p.reference === "DD-0004"
+              ? ragGreen.id
+              : p.reference === "DD-0002"
+                ? ragGreen.id
+                : ragAmber.id,
+        seniorManagerUserId: adminUser.id,
+        siteManagerUserId: managerUser.id,
+        contractManagerUserId: managerUser.id,
+        updatedById: adminUser.id
+      }
+    });
+
+    const corrCount = await db.projectCorrespondence.count({ where: { projectId: p.id } });
+    if (corrCount === 0) {
+      await db.projectCorrespondence.createMany({
+        data: [
+          {
+            projectId: p.id,
+            fromAddress: "client@example.com",
+            toAddress: "dalmoy@dalmoy.local",
+            subject: `Kickoff: ${p.reference}`,
+            bodyText: "Please confirm mobilisation date and point of contact.",
+            aiSummary: "Client requested confirmation of mobilisation date and key contact.",
+            occurredAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
+            sourceType: "manual",
+            provider: "manual",
+            createdById: adminUser.id
+          },
+          {
+            projectId: p.id,
+            fromAddress: "dalmoy@dalmoy.local",
+            toAddress: "client@example.com",
+            subject: `Re: Kickoff: ${p.reference}`,
+            bodyText: "Mobilisation planned for next Monday. Site manager assigned.",
+            aiSummary: "Dalmoy confirmed mobilisation date and assigned site manager.",
+            occurredAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1),
+            sourceType: "manual",
+            provider: "manual",
+            createdById: managerUser.id
+          }
+        ]
+      });
+    }
+
+    const actionCount = await db.projectActionItem.count({ where: { projectId: p.id } });
+    if (actionCount === 0) {
+      await db.projectActionItem.createMany({
+        data: [
+          {
+            projectId: p.id,
+            title: "Confirm access hours and loading bay requirements",
+            statusOptionId: actOpen.id,
+            priorityOptionId: prioHigh.id,
+            ownerUserId: managerUser.id,
+            requiredClosureDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3),
+            createdById: adminUser.id,
+            updatedById: adminUser.id
+          },
+          {
+            projectId: p.id,
+            title: "Issue programme draft for sign-off",
+            statusOptionId: actInProgress.id,
+            priorityOptionId: prioMedium.id,
+            ownerUserId: adminUser.id,
+            requiredClosureDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+            createdById: adminUser.id,
+            updatedById: adminUser.id
+          }
+        ]
+      });
+    }
+
+    const financeCount = await db.projectFinanceLine.count({ where: { projectId: p.id } });
+    if (financeCount === 0) {
+      await db.projectFinanceLine.createMany({
+        data: [
+          {
+            projectId: p.id,
+            item: "Partitioning & Studwork",
+            supplier: "Fitout Supplies Ltd",
+            tenderedCost: "12000.00",
+            qty: "1.00",
+            actualCost: "11850.00",
+            invoicedCost: "15000.00",
+            createdById: adminUser.id,
+            updatedById: adminUser.id
+          },
+          {
+            projectId: p.id,
+            item: "Ceiling & Lighting",
+            supplier: "Brightline Electrical",
+            tenderedCost: "9000.00",
+            qty: "1.00",
+            actualCost: "8700.00",
+            invoicedCost: "11000.00",
+            createdById: adminUser.id,
+            updatedById: adminUser.id
+          }
+        ]
+      });
+    }
+
+    const reportCount = await db.siteInspectionReport.count({ where: { projectId: p.id } });
+    if (reportCount === 0) {
+      const report = await db.siteInspectionReport.create({
+        data: {
+          projectId: p.id,
+          completedByUserId: managerUser.id,
+          inspectionDate: new Date(Date.now() - 1000 * 60 * 60 * 24),
+          projectReferenceSnapshot: p.reference
+        }
+      });
+      await db.siteInspectionItem.createMany({
+        data: [
+          {
+            reportId: report.id,
+            itemTitle: "Fire doors installed and tagged",
+            comment: "Labels present, check closers next visit."
+          }
+        ]
+      });
+    }
+  }
+
+  const firstProject = projects[0];
+  if (firstProject) {
+    const existing = await db.projectAttachment.count({ where: { projectId: firstProject.id } });
+    if (existing === 0) {
+      const demo = await storeLocalBuffer({
+        originalName: "dalmoy-demo-attachment.txt",
+        buffer: Buffer.from("Dalmoy Digital demo attachment.\n", "utf8"),
+        prefix: "demo"
+      });
+
+      const stored = await db.storedFile.create({
+        data: {
+          storageProvider: demo.storageProvider,
+          storageKey: demo.storageKey,
+          originalName: "dalmoy-demo-attachment.txt",
+          mimeType: "text/plain",
+          sizeBytes: demo.sizeBytes,
+          uploadedById: adminUser.id
+        }
+      });
+
+      await db.projectAttachment.create({
+        data: {
+          projectId: firstProject.id,
+          fileId: stored.id,
+          categoryOptionId: catDrawings.id,
+          uploadedById: adminUser.id
+        }
+      });
+    }
   }
 
   // Example generic lookup for future modules
@@ -324,4 +719,3 @@ main()
   .finally(async () => {
     await db.$disconnect();
   });
-

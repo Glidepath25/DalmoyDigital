@@ -13,7 +13,14 @@ export async function GET(_req: Request, ctx: RouteContext) {
 
   const project = await db.project.findUnique({
     where: { id: ctx.params.projectId },
-    include: { client: true, status: true }
+    include: {
+      client: true,
+      status: true,
+      ragOption: true,
+      seniorManagerUser: true,
+      siteManagerUser: true,
+      contractManagerUser: true
+    }
   });
   if (!project) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -24,6 +31,18 @@ export async function GET(_req: Request, ctx: RouteContext) {
     notes: project.notes,
     client: { id: project.clientId, name: project.client.name },
     status: { id: project.statusId, name: project.status.name },
+    rag: project.ragOption
+      ? { id: project.ragOptionId, label: project.ragOption.label, value: project.ragOption.value }
+      : null,
+    seniorManager: project.seniorManagerUser
+      ? { id: project.seniorManagerUserId, name: project.seniorManagerUser.name, email: project.seniorManagerUser.email }
+      : null,
+    siteManager: project.siteManagerUser
+      ? { id: project.siteManagerUserId, name: project.siteManagerUser.name, email: project.siteManagerUser.email }
+      : null,
+    contractManager: project.contractManagerUser
+      ? { id: project.contractManagerUserId, name: project.contractManagerUser.name, email: project.contractManagerUser.email }
+      : null,
     dueDate: project.dueDate?.toISOString() ?? null,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString()
@@ -36,6 +55,10 @@ const PatchBodySchema = z.object({
   notes: z.string().max(5000).nullable().optional(),
   clientId: z.string().uuid().optional(),
   statusId: z.string().uuid().optional(),
+  ragOptionId: z.string().uuid().nullable().optional(),
+  seniorManagerUserId: z.string().uuid().nullable().optional(),
+  siteManagerUserId: z.string().uuid().nullable().optional(),
+  contractManagerUserId: z.string().uuid().nullable().optional(),
   dueDate: z.string().datetime().nullable().optional()
 });
 
@@ -56,6 +79,10 @@ export async function PATCH(req: Request, ctx: RouteContext) {
         ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes?.trim() || null } : {}),
         ...(parsed.data.clientId ? { clientId: parsed.data.clientId } : {}),
         ...(parsed.data.statusId ? { statusId: parsed.data.statusId } : {}),
+        ...(parsed.data.ragOptionId !== undefined ? { ragOptionId: parsed.data.ragOptionId } : {}),
+        ...(parsed.data.seniorManagerUserId !== undefined ? { seniorManagerUserId: parsed.data.seniorManagerUserId } : {}),
+        ...(parsed.data.siteManagerUserId !== undefined ? { siteManagerUserId: parsed.data.siteManagerUserId } : {}),
+        ...(parsed.data.contractManagerUserId !== undefined ? { contractManagerUserId: parsed.data.contractManagerUserId } : {}),
         ...(parsed.data.dueDate !== undefined ? { dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null } : {}),
         updatedById: auth.userId
       }
@@ -66,4 +93,3 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
   return NextResponse.json({ ok: true });
 }
-

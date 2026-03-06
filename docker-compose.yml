@@ -19,6 +19,8 @@ services:
       BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
     ports:
       - "3000:3000"
+    volumes:
+      - dalmoy_digital_uploads:/app/uploads
     restart: unless-stopped
 
   db:
@@ -41,3 +43,4 @@ services:
 
 volumes:
   dalmoy_digital_pgdata:
+  dalmoy_digital_uploads:

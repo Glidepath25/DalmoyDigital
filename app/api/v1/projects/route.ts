@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireApiPermission } from "@/lib/api/auth";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
+import { DEFAULT_PROGRAMME_MILESTONES } from "@/lib/project-workspace/milestones";
 
 const ListQuerySchema = z.object({
   q: z.string().optional(),
@@ -98,9 +99,25 @@ export async function POST(req: Request) {
         updatedById: auth.userId
       }
     });
+
+    // Non-fatal defaults for the programme module
+    try {
+      await db.projectMilestone.createMany({
+        data: DEFAULT_PROGRAMME_MILESTONES.map((m) => ({
+          projectId: project.id,
+          milestoneKey: m.key,
+          milestoneName: m.name,
+          sortOrder: m.sortOrder,
+          createdById: auth.userId,
+          updatedById: auth.userId
+        })),
+        skipDuplicates: true
+      });
+    } catch {
+      // ignore
+    }
     return NextResponse.json({ id: project.id }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "create_failed" }, { status: 400 });
   }
 }
-

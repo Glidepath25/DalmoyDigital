@@ -5,7 +5,7 @@ Project tracking platform for construction fitout projects — from costing thro
 Phase 1 delivers:
 - Authentication + RBAC (Admin / Manager / Standard User / Read Only)
 - Dashboard with project list, search, filters, pagination
-- Project detail module (dynamic dropdowns for client + status)
+- Project workspace module with tabs (overview, correspondence, programme, actions, finance, attachments, inspections)
 - Admin area for users, projects, and dropdown/lookup values
 - PostgreSQL + Prisma schema, migration, and seed demo data
 - API-first foundation under `/api/v1/*` (web + future mobile)
@@ -23,9 +23,9 @@ Phase 1 delivers:
   - `app/api/auth/*` — NextAuth endpoints
   - `app/admin/*` — admin pages (protected by permissions)
   - `app/dashboard` — project list with filters
-  - `app/projects/[projectId]` — project module
+  - `app/projects/[projectId]` — project workspace (tabbed)
 - `components/` — reusable UI + layout components
-- `lib/` — backend/shared logic (db, auth, RBAC, permissions)
+- `lib/` — backend/shared logic (db, auth, RBAC, permissions, storage)
 - `prisma/` — schema, migrations, seed script
 
 ## Database design notes
@@ -40,6 +40,7 @@ Key ideas:
 - **Mobile-friendly/API-first**:
   - Stable UUID primary keys
   - Versioned API namespace: `/api/v1/*`
+  - Attachments + inspection photos stored as `stored_files` (local now; S3/Spaces later)
 
 ## Setup (local)
 
@@ -62,6 +63,7 @@ Copy `.env.example` → `.env` and adjust if needed:
 - `DATABASE_URL`
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
+- `UPLOAD_DIR` (optional; defaults to `./uploads` on host or `/app/uploads` in Docker)
 
 Note: when running the app on your host (not in Docker) while Postgres runs in Docker, set `DATABASE_URL` to use `localhost:5432` (not `db:5432`).
 
@@ -103,6 +105,8 @@ These endpoints are intended to be consumed by both web and a future mobile app:
 - `PATCH /api/v1/projects/:projectId`
 - `GET /api/v1/clients`
 - `GET /api/v1/statuses`
+- `GET /api/v1/attachments/:attachmentId/download`
+- `GET /api/v1/files/:fileId` (serves stored files like inspection photos)
 
 Auth is session-based (NextAuth). For a future mobile app, you can evolve this to:
 - token-based auth (e.g. rotating refresh tokens)
@@ -138,6 +142,8 @@ Edit `.env` and set:
 docker compose up -d --build
 ```
 
+Uploads (attachments + inspection photos) are stored in the named volume `dalmoy_digital_uploads` mounted at `/app/uploads`.
+
 ### 4) Run Prisma migrations (in Docker)
 ```bash
 docker compose exec app npx prisma migrate deploy
@@ -161,11 +167,11 @@ docker compose logs -f db
 ## Future migration to AWS (no lock-in)
 - App container can move to ECS (Fargate), App Runner, or EC2.
 - Database can move to RDS or Aurora PostgreSQL.
-- File storage (future) can move to S3 (store metadata + permissions in Postgres).
+- File storage can move to S3 (store metadata + permissions in Postgres; swap storage provider).
 
 ## Roadmap alignment (future modules)
 This Phase 1 foundation is designed so you can add:
-- file uploads (add `files` + storage integration)
+- richer file storage (swap local uploads for S3/Spaces)
 - tasks (add `tasks` + assignments + due dates)
 - costing and procurement (add line-item tables and approvals)
 - site progress/snags (use `lookup_types/options` for dynamic fields)
