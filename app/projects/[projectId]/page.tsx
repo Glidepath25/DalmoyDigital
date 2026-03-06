@@ -61,6 +61,8 @@ export default async function ProjectDetailPage(props: PageProps) {
   if (!project) notFound();
 
   const saved = toString(props.searchParams?.saved) === "1";
+  const created = toString(props.searchParams?.created) === "1";
+  const exists = toString(props.searchParams?.exists) === "1";
   const error = toString(props.searchParams?.error);
 
   const progress = statusProgressPercent(project.status.name);
@@ -80,6 +82,12 @@ export default async function ProjectDetailPage(props: PageProps) {
               </div>
             }
           >
+            {created ? <p className="text-sm text-semantic-success font-semibold">Project created.</p> : null}
+            {exists ? (
+              <p className="text-sm text-brand-secondary font-semibold">
+                A project with that reference already existed — opened it instead.
+              </p>
+            ) : null}
             {saved ? <p className="text-sm text-semantic-success font-semibold">Saved.</p> : null}
             {error ? <p className="text-sm text-semantic-danger font-semibold">Could not save ({error}).</p> : null}
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -19,6 +20,17 @@ const CreateProjectSchema = z.object({
 
 export async function createProject(origin: "admin" | "app", formData: FormData) {
   const userId = await requirePermission(PERMISSIONS.projectsCreate);
+
+  const raw = {
+    reference: String(formData.get("reference") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    clientId: String(formData.get("clientId") ?? ""),
+    statusId: String(formData.get("statusId") ?? ""),
+    dueDate: String(formData.get("dueDate") ?? ""),
+    notesLength: String(formData.get("notes") ?? "").length
+  };
+  console.info("[createProject] start", { origin, userId, ...raw });
+
   const parsed = CreateProjectSchema.safeParse({
     reference: formData.get("reference"),
     name: formData.get("name"),
@@ -29,11 +41,18 @@ export async function createProject(origin: "admin" | "app", formData: FormData)
   });
 
   const basePath = origin === "admin" ? "/admin/projects/new" : "/projects/new";
-  if (!parsed.success) redirect(`${basePath}?error=invalid`);
+  if (!parsed.success) {
+    console.warn("[createProject] invalid payload", { origin, userId, issues: parsed.error.issues });
+    redirect(`${basePath}?error=invalid`);
+  }
 
   const dueDate = parsed.data.dueDate ? new Date(parsed.data.dueDate) : null;
-  if (dueDate && Number.isNaN(dueDate.getTime())) redirect(`${basePath}?error=invalid_date`);
+  if (dueDate && Number.isNaN(dueDate.getTime())) {
+    console.warn("[createProject] invalid due date", { origin, userId, dueDate: parsed.data.dueDate });
+    redirect(`${basePath}?error=invalid_date`);
+  }
 
+  let projectId: string;
   try {
     const project = await db.project.create({
       data: {
@@ -48,11 +67,40 @@ export async function createProject(origin: "admin" | "app", formData: FormData)
       }
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/admin/projects");
-    redirect(`/projects/${project.id}?saved=1`);
-  } catch {
+    projectId = project.id;
+    console.info("[createProject] created", { origin, userId, projectId, reference: project.reference });
+  } catch (err) {
+    console.error("[createProject] create failed", { origin, userId, err });
+
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2002") {
+        // Unique constraint violation (likely reference already exists).
+        const existing = await db.project.findUnique({ where: { reference: parsed.data.reference } });
+        if (existing) {
+          console.warn("[createProject] reference already exists, redirecting to existing", {
+            origin,
+            userId,
+            reference: parsed.data.reference,
+            projectId: existing.id
+          });
+          redirect(`/projects/${existing.id}?exists=1`);
+        }
+        redirect(`${basePath}?error=reference_taken`);
+      }
+    }
+
     redirect(`${basePath}?error=create_failed`);
   }
-}
 
+  try {
+    console.info("[createProject] revalidate paths", { origin, userId, projectId });
+    revalidatePath("/dashboard");
+    revalidatePath("/admin/projects");
+  } catch (err) {
+    console.warn("[createProject] revalidate failed", { origin, userId, projectId, err });
+  }
+
+  const destination = `/projects/${projectId}?created=1`;
+  console.info("[createProject] redirect", { origin, userId, projectId, destination });
+  redirect(destination);
+}

@@ -35,11 +35,23 @@ export default async function NewProjectPage(props: PageProps) {
   ]);
 
   const error = toString(props.searchParams?.error);
+  const errorMessage =
+    error === "invalid"
+      ? "Please check the form values and try again."
+      : error === "invalid_date"
+        ? "Due date is invalid."
+        : error === "reference_taken"
+          ? "That project reference already exists. Please use a different reference."
+          : error === "create_failed"
+            ? "Project creation failed. If the project appears in the project list, do not resubmit."
+            : error
+              ? `Error: ${error}`
+              : null;
 
   return (
     <AppShell title="Admin • New Project">
       <AdminNav active="projects" />
-      {error ? <p className="mt-4 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
+      {errorMessage ? <p className="mt-4 text-sm font-semibold text-semantic-danger">{errorMessage}</p> : null}
       <Card className="p-4">
         <form action={createProjectAdmin} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

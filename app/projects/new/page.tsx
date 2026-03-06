@@ -33,6 +33,18 @@ export default async function NewProjectPage(props: PageProps) {
   ]);
 
   const error = toString(props.searchParams?.error);
+  const errorMessage =
+    error === "invalid"
+      ? "Please check the form values and try again."
+      : error === "invalid_date"
+        ? "Due date is invalid."
+        : error === "reference_taken"
+          ? "That project reference already exists. Please use a different reference."
+          : error === "create_failed"
+            ? "Project creation failed. If the project appears in the dashboard, do not resubmit."
+            : error
+              ? `Error: ${error}`
+              : null;
 
   return (
     <AppShell subtitle="Create a new fitout project workspace." title="New project">
@@ -41,7 +53,7 @@ export default async function NewProjectPage(props: PageProps) {
           ← Back to dashboard
         </Link>
       </div>
-      {error ? <p className="mt-3 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
+      {errorMessage ? <p className="mt-3 text-sm font-semibold text-semantic-danger">{errorMessage}</p> : null}
       <Card className="p-4 mt-4">
         <form action={createProject.bind(null, "app")} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
