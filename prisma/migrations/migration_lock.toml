@@ -1,0 +1,4 @@
+# Prisma Migrate lockfile
+# Generated manually for this repo scaffold.
+provider = "postgresql"
+

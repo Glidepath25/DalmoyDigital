@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid @map("id")
+  email        String   @unique @map("email")
+  name         String?
+  passwordHash String?  @map("password_hash")
+  isActive     Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  roles UserRole[]
+
+  createdClients   Client[]       @relation("client_created_by")
+  updatedClients   Client[]       @relation("client_updated_by")
+  createdStatuses  ProjectStatus[] @relation("status_created_by")
+  updatedStatuses  ProjectStatus[] @relation("status_updated_by")
+  createdLookups   LookupType[]   @relation("lookup_type_created_by")
+  updatedLookups   LookupType[]   @relation("lookup_type_updated_by")
+  createdOptions   LookupOption[] @relation("lookup_option_created_by")
+  updatedOptions   LookupOption[] @relation("lookup_option_updated_by")
+  createdProjects  Project[]      @relation("project_created_by")
+  updatedProjects  Project[]      @relation("project_updated_by")
+
+  @@map("users")
+}
+
+model Role {
+  id          String  @id @default(uuid()) @db.Uuid @map("id")
+  key         String  @unique
+  name        String
+  description String?
+  isSystem    Boolean @default(true) @map("is_system")
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid @map("id")
+  key         String  @unique
+  description String?
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @db.Uuid @map("user_id")
+  roleId String @db.Uuid @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String @db.Uuid @map("role_id")
+  permissionId String @db.Uuid @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Client {
+  id        String   @id @default(uuid()) @db.Uuid @map("id")
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("client_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("client_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  projects Project[]
+
+  @@index([isActive, sortOrder])
+  @@index([archivedAt])
+  @@map("clients")
+}
+
+model ProjectStatus {
+  id        String   @id @default(uuid()) @db.Uuid @map("id")
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("status_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("status_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  projects Project[]
+
+  @@index([isActive, sortOrder])
+  @@index([archivedAt])
+  @@map("project_statuses")
+}
+
+model LookupType {
+  id          String   @id @default(uuid()) @db.Uuid @map("id")
+  key         String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  archivedAt  DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("lookup_type_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("lookup_type_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  options LookupOption[]
+
+  @@index([isActive, sortOrder])
+  @@map("lookup_types")
+}
+
+model LookupOption {
+  id           String   @id @default(uuid()) @db.Uuid @map("id")
+  lookupTypeId String   @db.Uuid @map("lookup_type_id")
+  label        String
+  value        String
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  archivedAt   DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("lookup_option_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("lookup_option_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  lookupType LookupType @relation(fields: [lookupTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([lookupTypeId, value])
+  @@index([lookupTypeId, isActive, sortOrder])
+  @@map("lookup_options")
+}
+
+model Project {
+  id        String   @id @default(uuid()) @db.Uuid @map("id")
+  reference String   @unique
+  name      String
+  notes     String?
+  dueDate   DateTime? @map("due_date")
+
+  clientId String @db.Uuid @map("client_id")
+  statusId String @db.Uuid @map("status_id")
+
+  client Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  status ProjectStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdById String? @db.Uuid @map("created_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  createdBy   User?   @relation("project_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("project_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([statusId])
+  @@index([dueDate])
+  @@map("projects")
+}

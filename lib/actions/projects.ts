@@ -1,0 +1,58 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+
+import { requirePermission } from "@/lib/auth/guards";
+import { db } from "@/lib/db";
+import { PERMISSIONS } from "@/lib/permissions";
+
+const CreateProjectSchema = z.object({
+  reference: z.string().trim().min(1).max(50),
+  name: z.string().trim().min(1).max(200),
+  notes: z.string().trim().max(5000).optional().or(z.literal("")),
+  clientId: z.string().uuid(),
+  statusId: z.string().uuid(),
+  dueDate: z.string().optional().or(z.literal(""))
+});
+
+export async function createProject(origin: "admin" | "app", formData: FormData) {
+  const userId = await requirePermission(PERMISSIONS.projectsCreate);
+  const parsed = CreateProjectSchema.safeParse({
+    reference: formData.get("reference"),
+    name: formData.get("name"),
+    notes: formData.get("notes"),
+    clientId: formData.get("clientId"),
+    statusId: formData.get("statusId"),
+    dueDate: formData.get("dueDate")
+  });
+
+  const basePath = origin === "admin" ? "/admin/projects/new" : "/projects/new";
+  if (!parsed.success) redirect(`${basePath}?error=invalid`);
+
+  const dueDate = parsed.data.dueDate ? new Date(parsed.data.dueDate) : null;
+  if (dueDate && Number.isNaN(dueDate.getTime())) redirect(`${basePath}?error=invalid_date`);
+
+  try {
+    const project = await db.project.create({
+      data: {
+        reference: parsed.data.reference,
+        name: parsed.data.name,
+        notes: parsed.data.notes || null,
+        clientId: parsed.data.clientId,
+        statusId: parsed.data.statusId,
+        dueDate,
+        createdById: userId,
+        updatedById: userId
+      }
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/admin/projects");
+    redirect(`/projects/${project.id}?saved=1`);
+  } catch {
+    redirect(`${basePath}?error=create_failed`);
+  }
+}
+
