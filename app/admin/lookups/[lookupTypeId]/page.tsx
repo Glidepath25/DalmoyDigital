@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminNav } from "@/components/app/admin-nav";
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,6 +37,7 @@ export default async function LookupTypeOptionsPage(props: PageProps) {
   if (!lookupType) {
     return (
       <AppShell title="Admin • Lookup Options">
+        <AdminNav active="lookups" />
         <p className="text-sm text-slate-600">Lookup type not found.</p>
         <Link className="text-sm text-blue-700 hover:underline" href="/admin/lookups">
           Back
@@ -46,6 +48,7 @@ export default async function LookupTypeOptionsPage(props: PageProps) {
 
   return (
     <AppShell title={`Admin • Lookup Options • ${lookupType.name}`}>
+      <AdminNav active="lookups" />
       <div className="flex items-center justify-between gap-3">
         <Link className="text-sm text-blue-700 hover:underline" href="/admin/lookups">
           ← Back to lookup types
@@ -53,8 +56,8 @@ export default async function LookupTypeOptionsPage(props: PageProps) {
         <p className="text-xs text-slate-600">Key: {lookupType.key}</p>
       </div>
 
-      {saved ? <p className="mt-3 text-sm text-green-700">Saved.</p> : null}
-      {error ? <p className="mt-3 text-sm text-red-700">Error: {error}</p> : null}
+      {saved ? <p className="mt-3 text-sm font-semibold text-semantic-success">Saved.</p> : null}
+      {error ? <p className="mt-3 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
 
       <Card className="p-4 mt-4">
         <h2 className="text-sm font-semibold text-slate-900">Add option</h2>

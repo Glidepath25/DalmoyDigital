@@ -35,29 +35,29 @@ export default async function NewProjectPage(props: PageProps) {
   const error = toString(props.searchParams?.error);
 
   return (
-    <AppShell title="New Project">
+    <AppShell subtitle="Create a new fitout project workspace." title="New project">
       <div className="flex items-center justify-between gap-3">
-        <Link className="text-sm text-blue-700 hover:underline" href="/dashboard">
+        <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/dashboard">
           ← Back to dashboard
         </Link>
       </div>
-      {error ? <p className="mt-3 text-sm text-red-700">Error: {error}</p> : null}
+      {error ? <p className="mt-3 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
       <Card className="p-4 mt-4">
         <form action={createProject.bind(null, "app")} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-700">Project reference / ID</label>
+              <label className="text-xs font-semibold text-brand-secondary">Project reference / ID</label>
               <Input className="mt-1" name="reference" placeholder="e.g. DD-0005" />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-700">Project name</label>
+              <label className="text-xs font-semibold text-brand-secondary">Project name</label>
               <Input className="mt-1" name="name" placeholder="Project name" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-700">Client</label>
+              <label className="text-xs font-semibold text-brand-secondary">Client</label>
               <Select className="mt-1" name="clientId">
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -67,7 +67,7 @@ export default async function NewProjectPage(props: PageProps) {
               </Select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-700">Status</label>
+              <label className="text-xs font-semibold text-brand-secondary">Status</label>
               <Select className="mt-1" name="statusId">
                 {statuses.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -77,13 +77,13 @@ export default async function NewProjectPage(props: PageProps) {
               </Select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-700">Due date</label>
+              <label className="text-xs font-semibold text-brand-secondary">Due date</label>
               <Input className="mt-1" defaultValue={format(new Date(), "yyyy-MM-dd")} name="dueDate" type="date" />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-700">Notes</label>
+            <label className="text-xs font-semibold text-brand-secondary">Notes</label>
             <Textarea className="mt-1 min-h-[140px]" name="notes" placeholder="Optional notes..." />
           </div>
 
@@ -93,4 +93,3 @@ export default async function NewProjectPage(props: PageProps) {
     </AppShell>
   );
 }
-

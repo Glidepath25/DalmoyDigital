@@ -2,8 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    background: theme(colors.app.bg);
+  }
+
+  body {
+    min-height: 100%;
+    background: theme(colors.app.bg);
+    color: theme(colors.brand.primary);
+  }
+
+  ::selection {
+    background: rgba(76, 106, 138, 0.25);
+  }
+}
+
 html,
 body {
   height: 100%;
 }
 
+@layer components {
+  .dd-card {
+    @apply rounded-xl border border-app-border bg-app-surface shadow-card;
+  }
+}

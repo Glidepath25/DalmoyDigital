@@ -9,10 +9,10 @@ export function SignOutButton() {
     <Button
       onClick={() => signOut({ callbackUrl: "/login" })}
       type="button"
+      size="sm"
       variant="secondary"
     >
       Sign out
     </Button>
   );
 }
-

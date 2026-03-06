@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 
+import { AdminNav } from "@/components/app/admin-nav";
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,22 +30,23 @@ export default async function AdminClientsPage(props: PageProps) {
 
   return (
     <AppShell title="Admin • Clients">
-      {saved ? <p className="text-sm text-green-700">Saved.</p> : null}
-      {error ? <p className="text-sm text-red-700">Error: {error}</p> : null}
+      <AdminNav active="clients" />
+      {saved ? <p className="mt-4 text-sm font-semibold text-semantic-success">Saved.</p> : null}
+      {error ? <p className="mt-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
 
       <Card className="p-4">
-        <h2 className="text-sm font-semibold text-slate-900">Add client</h2>
+        <h2 className="text-sm font-semibold text-brand-primary">Add client</h2>
         <form action={createClient} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
           <div className="md:col-span-6">
-            <label className="text-xs font-medium text-slate-700">Name</label>
+            <label className="text-xs font-semibold text-brand-secondary">Name</label>
             <Input className="mt-1" name="name" placeholder="Client name" />
           </div>
           <div className="md:col-span-3">
-            <label className="text-xs font-medium text-slate-700">Sort order</label>
+            <label className="text-xs font-semibold text-brand-secondary">Sort order</label>
             <Input className="mt-1" defaultValue="0" name="sortOrder" type="number" />
           </div>
           <div className="md:col-span-3 flex items-end gap-2">
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm font-semibold text-brand-secondary">
               <input defaultChecked name="isActive" type="checkbox" value="true" />
               Active
             </label>
@@ -53,26 +55,26 @@ export default async function AdminClientsPage(props: PageProps) {
         </form>
       </Card>
 
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white overflow-hidden">
+      <div className="mt-4 dd-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-700">
+            <thead className="bg-app-bg text-brand-secondary">
               <tr>
-                <th className="text-left font-medium px-4 py-2">Name</th>
-                <th className="text-left font-medium px-4 py-2">Active</th>
-                <th className="text-left font-medium px-4 py-2">Sort</th>
-                <th className="text-left font-medium px-4 py-2">Archived</th>
-                <th className="text-right font-medium px-4 py-2">Actions</th>
+                <th className="text-left font-semibold px-4 py-3">Name</th>
+                <th className="text-left font-semibold px-4 py-3">Active</th>
+                <th className="text-left font-semibold px-4 py-3">Sort</th>
+                <th className="text-left font-semibold px-4 py-3">Archived</th>
+                <th className="text-right font-semibold px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-app-border bg-white">
               {clients.map((c) => (
-                <tr key={c.id} className={c.archivedAt ? "bg-slate-50" : ""}>
+                <tr key={c.id} className={c.archivedAt ? "bg-app-bg/60" : ""}>
                   <td className="px-4 py-3">
                     <form action={updateClient.bind(null, c.id)} className="flex items-center gap-2">
                       <Input className="max-w-[320px]" defaultValue={c.name} name="name" />
                       <Input className="w-[100px]" defaultValue={String(c.sortOrder)} name="sortOrder" type="number" />
-                      <label className="flex items-center gap-2 text-xs text-slate-700">
+                      <label className="flex items-center gap-2 text-xs font-semibold text-brand-secondary">
                         <input defaultChecked={c.isActive} name="isActive" type="checkbox" value="true" />
                         Active
                       </label>
@@ -81,9 +83,9 @@ export default async function AdminClientsPage(props: PageProps) {
                       </Button>
                     </form>
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{c.isActive ? "Yes" : "No"}</td>
-                  <td className="px-4 py-3 text-slate-700">{c.sortOrder}</td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="px-4 py-3 text-brand-secondary">{c.isActive ? "Yes" : "No"}</td>
+                  <td className="px-4 py-3 text-brand-secondary">{c.sortOrder}</td>
+                  <td className="px-4 py-3 text-brand-secondary">
                     {c.archivedAt ? format(c.archivedAt, "yyyy-MM-dd") : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -105,7 +107,7 @@ export default async function AdminClientsPage(props: PageProps) {
               ))}
               {clients.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-8 text-slate-600" colSpan={5}>
+                  <td className="px-4 py-10 text-brand-secondary" colSpan={5}>
                     No clients yet.
                   </td>
                 </tr>

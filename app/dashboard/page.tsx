@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
-import { format } from "date-fns";
+import { endOfWeek, format, startOfWeek } from "date-fns";
 
 import { AppShell } from "@/components/app/app-shell";
+import { EmptyState } from "@/components/app/empty-state";
+import { FilterPanel } from "@/components/app/filter-panel";
+import { StatCard } from "@/components/app/stat-card";
+import { StatusBadge } from "@/components/app/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -28,6 +33,26 @@ function toDate(value: string | undefined) {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function statusProgressPercent(statusName: string) {
+  const name = statusName.trim().toLowerCase();
+  if (name === "costing") return 15;
+  if (name === "in progress") return 55;
+  if (name === "snagging") return 85;
+  if (name === "complete" || name === "completed") return 100;
+  if (name === "on hold") return 40;
+  if (name === "cancelled" || name === "canceled") return 0;
+  return 35;
+}
+
+function dueTone(dueDate: Date | null) {
+  if (!dueDate) return "neutral" as const;
+  const now = new Date();
+  const days = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (days < 0) return "danger" as const;
+  if (days <= 3) return "warning" as const;
+  return "neutral" as const;
 }
 
 export default async function DashboardPage(props: PageProps) {
@@ -79,6 +104,18 @@ export default async function DashboardPage(props: PageProps) {
     })
   ]);
 
+  const statusIdInProgress = statuses.find((s) => s.name.trim().toLowerCase() === "in progress")?.id ?? null;
+  const statusIdComplete = statuses.find((s) => s.name.trim().toLowerCase() === "complete")?.id ?? null;
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
+
+  const [totalAll, inProgressAll, dueThisWeekAll, completedAll] = await Promise.all([
+    db.project.count(),
+    statusIdInProgress ? db.project.count({ where: { statusId: statusIdInProgress } }) : Promise.resolve(0),
+    db.project.count({ where: { dueDate: { gte: weekStart, lte: weekEnd } } }),
+    statusIdComplete ? db.project.count({ where: { statusId: statusIdComplete } }) : Promise.resolve(0)
+  ]);
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const baseParams = new URLSearchParams();
@@ -96,152 +133,211 @@ export default async function DashboardPage(props: PageProps) {
       ? `/dashboard?${new URLSearchParams({ ...Object.fromEntries(baseParams), page: String(page + 1) })}`
       : null;
 
+  const primaryAction = canCreate ? (
+    <Link
+      className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-4 py-2 bg-brand-primary text-white hover:bg-brand-secondary border border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:ring-offset-2 focus:ring-offset-app-bg transition-colors"
+      href="/projects/new"
+    >
+      New project
+    </Link>
+  ) : null;
+
   return (
-    <AppShell title="Dashboard">
-      {canCreate ? (
-        <div className="flex items-center justify-end">
-          <Link
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-slate-900 text-white hover:bg-slate-800"
-            href="/projects/new"
-          >
-            New project
-          </Link>
-        </div>
-      ) : null}
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <form className="grid grid-cols-1 md:grid-cols-12 gap-3" method="get">
-          <div className="md:col-span-4">
-            <label className="text-xs font-medium text-slate-700">Search</label>
-            <Input className="mt-1" defaultValue={q} name="q" placeholder="Project name or reference" />
-          </div>
-          <div className="md:col-span-3">
-            <label className="text-xs font-medium text-slate-700">Client</label>
-            <Select className="mt-1" defaultValue={clientId} name="client">
-              <option value="">All clients</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="md:col-span-3">
-            <label className="text-xs font-medium text-slate-700">Status</label>
-            <Select className="mt-1" defaultValue={statusId} name="status">
-              <option value="">All statuses</option>
-              {statuses.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-slate-700">Due from</label>
-            <Input
-              className="mt-1"
-              defaultValue={dueFrom ? format(dueFrom, "yyyy-MM-dd") : ""}
-              name="dueFrom"
-              type="date"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-slate-700">Due to</label>
-            <Input
-              className="mt-1"
-              defaultValue={dueTo ? format(dueTo, "yyyy-MM-dd") : ""}
-              name="dueTo"
-              type="date"
-            />
-          </div>
-          <div className="md:col-span-12 flex items-center gap-2">
-            <Button type="submit">Apply</Button>
-            <Link className="text-sm text-slate-700 hover:underline" href="/dashboard">
-              Clear
-            </Link>
-          </div>
-        </form>
+    <AppShell
+      actions={primaryAction}
+      subtitle="Track fitout projects from costing through to handover."
+      title="Projects"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <StatCard label="Total projects" value={totalAll} />
+        <StatCard label="In progress" value={inProgressAll} />
+        <StatCard label="Due this week" hint={`${format(weekStart, "MMM d")}–${format(weekEnd, "MMM d")}`} value={dueThisWeekAll} />
+        <StatCard label="Completed" value={completedAll} />
       </div>
 
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <p className="text-sm text-slate-600">
-            {total} project{total === 1 ? "" : "s"}
+      <div className="mt-4">
+        <FilterPanel title="Find projects">
+          <form className="grid grid-cols-1 md:grid-cols-12 gap-3" method="get">
+            <div className="md:col-span-4">
+              <label className="text-xs font-semibold text-brand-secondary">Search</label>
+              <Input className="mt-1" defaultValue={q} name="q" placeholder="Project name or reference" />
+            </div>
+            <div className="md:col-span-3">
+              <label className="text-xs font-semibold text-brand-secondary">Client</label>
+              <Select className="mt-1" defaultValue={clientId} name="client">
+                <option value="">All clients</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="md:col-span-3">
+              <label className="text-xs font-semibold text-brand-secondary">Status</label>
+              <Select className="mt-1" defaultValue={statusId} name="status">
+                <option value="">All statuses</option>
+                {statuses.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-brand-secondary">Due from</label>
+              <Input
+                className="mt-1"
+                defaultValue={dueFrom ? format(dueFrom, "yyyy-MM-dd") : ""}
+                name="dueFrom"
+                type="date"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-brand-secondary">Due to</label>
+              <Input
+                className="mt-1"
+                defaultValue={dueTo ? format(dueTo, "yyyy-MM-dd") : ""}
+                name="dueTo"
+                type="date"
+              />
+            </div>
+            <div className="md:col-span-12 flex items-center gap-2">
+              <Button type="submit">Apply filters</Button>
+              <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/dashboard">
+                Clear
+              </Link>
+              <span className="ml-auto text-xs text-brand-secondary">
+                Showing {projects.length} of {total} match{total === 1 ? "" : "es"}
+              </span>
+            </div>
+          </form>
+        </FilterPanel>
+      </div>
+
+      <div className="mt-4 dd-card overflow-hidden">
+        <div className="px-4 py-3 flex items-center justify-between border-b border-app-border bg-white">
+          <p className="text-sm text-brand-secondary">
+            {total} project{total === 1 ? "" : "s"} (page {page} of {totalPages})
           </p>
           <div className="flex items-center gap-2">
             {prevHref ? (
               <Link
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-white text-slate-900 border border-slate-300 hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-primary border border-app-border hover:bg-app-bg"
                 href={prevHref}
                 prefetch={false}
               >
                 Previous
               </Link>
             ) : (
-              <span className="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-white text-slate-400 border border-slate-200 cursor-not-allowed">
+              <span className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-secondary/50 border border-app-border cursor-not-allowed">
                 Previous
               </span>
             )}
             {nextHref ? (
               <Link
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-white text-slate-900 border border-slate-300 hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-primary border border-app-border hover:bg-app-bg"
                 href={nextHref}
                 prefetch={false}
               >
                 Next
               </Link>
             ) : (
-              <span className="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-white text-slate-400 border border-slate-200 cursor-not-allowed">
+              <span className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-secondary/50 border border-app-border cursor-not-allowed">
                 Next
               </span>
             )}
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-slate-700">
-              <tr>
-                <th className="text-left font-medium px-4 py-2">Reference</th>
-                <th className="text-left font-medium px-4 py-2">Project</th>
-                <th className="text-left font-medium px-4 py-2">Client</th>
-                <th className="text-left font-medium px-4 py-2">Status</th>
-                <th className="text-left font-medium px-4 py-2">Due</th>
-                <th className="text-left font-medium px-4 py-2">Updated</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {projects.length === 0 ? (
+
+        {projects.length === 0 ? (
+          <div className="p-4">
+            <EmptyState
+              actionHref="/dashboard"
+              actionLabel="Clear filters"
+              description="Try adjusting filters or clearing search terms."
+              title="No projects match your filters"
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-app-bg text-brand-secondary">
                 <tr>
-                  <td className="px-4 py-8 text-slate-600" colSpan={6}>
-                    No projects found.
-                  </td>
+                  <th className="text-left font-semibold px-4 py-3">Project</th>
+                  <th className="text-left font-semibold px-4 py-3">Client</th>
+                  <th className="text-left font-semibold px-4 py-3">Status</th>
+                  <th className="text-left font-semibold px-4 py-3">Progress</th>
+                  <th className="text-left font-semibold px-4 py-3">Due</th>
+                  <th className="text-left font-semibold px-4 py-3">Updated</th>
                 </tr>
-              ) : (
-                projects.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-900">
-                      <Link className="hover:underline" href={`/projects/${p.id}`}>
-                        {p.reference}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-slate-900">{p.name}</td>
-                    <td className="px-4 py-3 text-slate-700">{p.client.name}</td>
-                    <td className="px-4 py-3 text-slate-700">{p.status.name}</td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {p.dueDate ? format(p.dueDate, "yyyy-MM-dd") : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                      {format(p.updatedAt, "yyyy-MM-dd")}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-4 py-3 text-xs text-slate-500">
-          Page {page} of {totalPages}
-        </div>
+              </thead>
+              <tbody className="divide-y divide-app-border bg-white">
+                {projects.map((p) => {
+                  const href = `/projects/${p.id}`;
+                  const percent = statusProgressPercent(p.status.name);
+                  const tone = dueTone(p.dueDate);
+                  return (
+                    <tr className="group hover:bg-app-bg/60" key={p.id}>
+                      <td className="px-4 py-3">
+                        <Link className="block" href={href}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-brand-primary group-hover:text-brand-primary">
+                                {p.name}
+                              </p>
+                              <p className="text-xs text-brand-secondary mt-0.5">{p.reference}</p>
+                            </div>
+                            <span className="text-xs font-semibold text-brand-accent">Open</span>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-brand-secondary">
+                        <Link className="block" href={href}>
+                          {p.client.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link className="block" href={href}>
+                          <StatusBadge name={p.status.name} />
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link className="block" href={href}>
+                          <div className="flex items-center gap-3">
+                            <div className="h-2 w-28 rounded-full bg-app-border/70 overflow-hidden">
+                              <div
+                                className="h-full bg-brand-accent"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-brand-secondary">{percent}%</span>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link className="block" href={href}>
+                          {p.dueDate ? (
+                            <Badge tone={tone}>
+                              Due {format(p.dueDate, "MMM d")}
+                            </Badge>
+                          ) : (
+                            <Badge tone="neutral">No due date</Badge>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-brand-secondary whitespace-nowrap">
+                        <Link className="block" href={href}>
+                          {format(p.updatedAt, "yyyy-MM-dd")}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </AppShell>
   );

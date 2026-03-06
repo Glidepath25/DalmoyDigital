@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminNav } from "@/components/app/admin-nav";
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,8 +32,9 @@ export default async function AdminLookupsPage(props: PageProps) {
 
   return (
     <AppShell title="Admin • Lookup Values">
-      {saved ? <p className="text-sm text-green-700">Saved.</p> : null}
-      {error ? <p className="text-sm text-red-700">Error: {error}</p> : null}
+      <AdminNav active="lookups" />
+      {saved ? <p className="mt-4 text-sm font-semibold text-semantic-success">Saved.</p> : null}
+      {error ? <p className="mt-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
 
       <Card className="p-4">
         <h2 className="text-sm font-semibold text-slate-900">Add lookup type</h2>
@@ -115,4 +117,3 @@ export default async function AdminLookupsPage(props: PageProps) {
     </AppShell>
   );
 }
-

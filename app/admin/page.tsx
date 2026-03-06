@@ -1,36 +1,45 @@
 import Link from "next/link";
 
+import { AdminNav } from "@/components/app/admin-nav";
+import { AppShell } from "@/components/app/app-shell";
+import { SectionCard } from "@/components/app/section-card";
 import { requirePermission } from "@/lib/auth/guards";
 import { getSession } from "@/lib/auth/session";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default async function AdminHomePage() {
-  await requirePermission("admin:access");
+  await requirePermission(PERMISSIONS.adminAccess);
   const session = await getSession();
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-semibold text-slate-900">Admin</h1>
-        <p className="text-slate-600 mt-1">Signed in as {session?.user?.email}</p>
+    <AppShell subtitle={`Signed in as ${session?.user?.email ?? ""}`} title="Admin control centre">
+      <AdminNav active="home" />
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link className="rounded-lg border bg-white p-4 hover:bg-slate-50" href="/admin/projects">
-            Projects
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <SectionCard subtitle="Create projects and manage delivery." title="Projects">
+          <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/admin/projects">
+            Open project admin →
           </Link>
-          <Link className="rounded-lg border bg-white p-4 hover:bg-slate-50" href="/admin/users">
-            Users
+        </SectionCard>
+        <SectionCard subtitle="Access levels and account security." title="Users & roles">
+          <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/admin/users">
+            Manage users →
           </Link>
-          <Link className="rounded-lg border bg-white p-4 hover:bg-slate-50" href="/admin/clients">
-            Clients
-          </Link>
-          <Link className="rounded-lg border bg-white p-4 hover:bg-slate-50" href="/admin/statuses">
-            Project Statuses
-          </Link>
-          <Link className="rounded-lg border bg-white p-4 hover:bg-slate-50" href="/admin/lookups">
-            Lookup Values
-          </Link>
-        </div>
+        </SectionCard>
+        <SectionCard subtitle="Dropdown values used throughout the platform." title="Lookups">
+          <div className="space-y-2">
+            <Link className="block text-sm font-semibold text-brand-accent hover:underline" href="/admin/clients">
+              Clients →
+            </Link>
+            <Link className="block text-sm font-semibold text-brand-accent hover:underline" href="/admin/statuses">
+              Project statuses →
+            </Link>
+            <Link className="block text-sm font-semibold text-brand-accent hover:underline" href="/admin/lookups">
+              Generic lookup types/options →
+            </Link>
+          </div>
+        </SectionCard>
       </div>
-    </main>
+    </AppShell>
   );
 }
