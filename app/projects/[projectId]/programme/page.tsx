@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
@@ -38,12 +39,15 @@ export default async function ProgrammePage(props: PageProps) {
   const userId = await requireUserId();
   const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
 
+  const project = await db.project.findUnique({ where: { id: props.params.projectId } });
+  if (!project) notFound();
+
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
 
   const [milestones, ragType] = await Promise.all([
     db.projectMilestone.findMany({
-      where: { projectId: props.params.projectId },
+      where: { projectId: project.id },
       include: { ragOption: true },
       orderBy: [{ sortOrder: "asc" }, { milestoneName: "asc" }]
     }),
@@ -67,7 +71,7 @@ export default async function ProgrammePage(props: PageProps) {
         subtitle="Editable milestone plan (Phase 1 table). Ready to evolve into a timeline/Gantt view."
         actions={
           milestones.length === 0 && canEdit ? (
-            <form action={initialiseProgramme.bind(null, props.params.projectId)}>
+            <form action={initialiseProgramme.bind(null, project.id)}>
               <Button type="submit">Create default milestones</Button>
             </form>
           ) : (
@@ -117,8 +121,8 @@ export default async function ProgrammePage(props: PageProps) {
                           <summary className="cursor-pointer text-sm font-semibold text-brand-accent hover:underline">
                             Edit
                           </summary>
-                          <div className="mt-2 dd-card p-3 w-[520px]">
-                            <form action={updateMilestone.bind(null, props.params.projectId, m.id)} className="grid grid-cols-2 gap-2">
+                            <div className="mt-2 dd-card p-3 w-[520px]">
+                            <form action={updateMilestone.bind(null, project.id, m.id)} className="grid grid-cols-2 gap-2">
                               <div className="col-span-2">
                                 <label className="text-xs font-semibold text-brand-secondary">RAG</label>
                                 <Select className="mt-1" defaultValue={m.ragOptionId ?? ""} name="ragOptionId">

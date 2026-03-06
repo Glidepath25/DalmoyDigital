@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
@@ -34,12 +35,15 @@ export default async function AttachmentsPage(props: PageProps) {
   const userId = await requireUserId();
   const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
 
+  const project = await db.project.findUnique({ where: { id: props.params.projectId } });
+  if (!project) notFound();
+
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
 
   const [attachments, categoryType] = await Promise.all([
     db.projectAttachment.findMany({
-      where: { projectId: props.params.projectId },
+      where: { projectId: project.id },
       include: { file: true, categoryOption: true, uploadedBy: true },
       orderBy: [{ createdAt: "desc" }]
     }),
@@ -69,7 +73,7 @@ export default async function AttachmentsPage(props: PageProps) {
         {canEdit ? (
           <div className="dd-card p-4 mb-3">
             <p className="text-sm font-semibold text-brand-primary">Upload attachment</p>
-            <form action={uploadAttachment.bind(null, props.params.projectId)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
+            <form action={uploadAttachment.bind(null, project.id)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-6">
                 <label className="text-xs font-semibold text-brand-secondary">File</label>
                 <Input className="mt-1" name="file" type="file" />
@@ -140,4 +144,3 @@ export default async function AttachmentsPage(props: PageProps) {
     </div>
   );
 }
-

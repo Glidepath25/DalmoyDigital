@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
@@ -22,11 +23,14 @@ export default async function InspectionsPage(props: PageProps) {
   const userId = await requireUserId();
   const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
 
+  const project = await db.project.findUnique({ where: { id: props.params.projectId } });
+  if (!project) notFound();
+
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
 
   const reports = await db.siteInspectionReport.findMany({
-    where: { projectId: props.params.projectId },
+    where: { projectId: project.id },
     include: { completedByUser: true, items: true },
     orderBy: [{ inspectionDate: "desc" }]
   });
@@ -40,7 +44,7 @@ export default async function InspectionsPage(props: PageProps) {
           <div className="flex items-center gap-2">
             <Badge tone="neutral">{reports.length} reports</Badge>
             {canEdit ? (
-              <Link href={`/projects/${props.params.projectId}/inspections/new`}>
+              <Link href={`/projects/${project.id}/inspections/new`}>
                 <Button type="button">Complete site inspection</Button>
               </Link>
             ) : null}
@@ -54,7 +58,7 @@ export default async function InspectionsPage(props: PageProps) {
           <EmptyState
             title="No inspection reports yet"
             description={canEdit ? "Complete the first inspection report for this project." : "No inspection reports are available for this project."}
-            actionHref={canEdit ? `/projects/${props.params.projectId}/inspections/new` : undefined}
+            actionHref={canEdit ? `/projects/${project.id}/inspections/new` : undefined}
             actionLabel={canEdit ? "Complete site inspection" : undefined}
           />
         ) : (
@@ -79,7 +83,7 @@ export default async function InspectionsPage(props: PageProps) {
                       <Badge tone="neutral">{r.items.length}</Badge>
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <Link className="text-sm font-semibold text-brand-accent hover:underline" href={`/projects/${props.params.projectId}/inspections/${r.id}`}>
+                      <Link className="text-sm font-semibold text-brand-accent hover:underline" href={`/projects/${project.id}/inspections/${r.id}`}>
                         Open
                       </Link>
                     </td>
@@ -93,4 +97,3 @@ export default async function InspectionsPage(props: PageProps) {
     </div>
   );
 }
-

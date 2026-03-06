@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
@@ -39,12 +40,15 @@ export default async function CriticalActionsPage(props: PageProps) {
   const userId = await requireUserId();
   const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
 
+  const project = await db.project.findUnique({ where: { id: props.params.projectId } });
+  if (!project) notFound();
+
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
 
   const [items, statusType, priorityType, users] = await Promise.all([
     db.projectActionItem.findMany({
-      where: { projectId: props.params.projectId },
+      where: { projectId: project.id },
       include: { ownerUser: true, statusOption: true, priorityOption: true },
       orderBy: [{ requiredClosureDate: "asc" }, { createdAt: "desc" }]
     }),
@@ -85,7 +89,7 @@ export default async function CriticalActionsPage(props: PageProps) {
         {canEdit ? (
           <div className="dd-card p-4 mb-3">
             <p className="text-sm font-semibold text-brand-primary">Add action item</p>
-            <form action={createActionItem.bind(null, props.params.projectId)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
+            <form action={createActionItem.bind(null, project.id)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-4">
                 <label className="text-xs font-semibold text-brand-secondary">Action / item</label>
                 <Input className="mt-1" name="title" placeholder="Action item..." />
@@ -189,7 +193,7 @@ export default async function CriticalActionsPage(props: PageProps) {
                               Edit
                             </summary>
                             <div className="mt-2 dd-card p-3 w-[560px]">
-                              <form action={updateActionItem.bind(null, props.params.projectId, it.id)} className="grid grid-cols-2 gap-2">
+                              <form action={updateActionItem.bind(null, project.id, it.id)} className="grid grid-cols-2 gap-2">
                                 <div className="col-span-2">
                                   <label className="text-xs font-semibold text-brand-secondary">Action / item</label>
                                   <Input className="mt-1" defaultValue={it.title} name="title" />
@@ -252,7 +256,7 @@ export default async function CriticalActionsPage(props: PageProps) {
                             </div>
                           </details>
 
-                          <form action={deleteActionItem.bind(null, props.params.projectId, it.id)}>
+                          <form action={deleteActionItem.bind(null, project.id, it.id)}>
                             <Button variant="danger" type="submit">
                               Delete
                             </Button>
@@ -272,4 +276,3 @@ export default async function CriticalActionsPage(props: PageProps) {
     </div>
   );
 }
-

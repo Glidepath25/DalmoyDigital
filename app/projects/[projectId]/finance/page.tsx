@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
@@ -36,11 +37,14 @@ export default async function FinancePage(props: PageProps) {
   const userId = await requireUserId();
   const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
 
+  const project = await db.project.findUnique({ where: { id: props.params.projectId } });
+  if (!project) notFound();
+
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
 
   const lines = await db.projectFinanceLine.findMany({
-    where: { projectId: props.params.projectId },
+    where: { projectId: project.id },
     orderBy: [{ createdAt: "desc" }]
   });
 
@@ -69,7 +73,7 @@ export default async function FinancePage(props: PageProps) {
         {canEdit ? (
           <div className="dd-card p-4 mb-3">
             <p className="text-sm font-semibold text-brand-primary">Add finance line</p>
-            <form action={createFinanceLine.bind(null, props.params.projectId)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
+            <form action={createFinanceLine.bind(null, project.id)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-3">
                 <label className="text-xs font-semibold text-brand-secondary">Item</label>
                 <Input className="mt-1" name="item" placeholder="Item" />
@@ -146,7 +150,7 @@ export default async function FinancePage(props: PageProps) {
                                 Edit
                               </summary>
                               <div className="mt-2 dd-card p-3 w-[640px]">
-                                <form action={updateFinanceLine.bind(null, props.params.projectId, l.id)} className="grid grid-cols-2 gap-2">
+                                <form action={updateFinanceLine.bind(null, project.id, l.id)} className="grid grid-cols-2 gap-2">
                                   <div className="col-span-2">
                                     <label className="text-xs font-semibold text-brand-secondary">Item</label>
                                     <Input className="mt-1" defaultValue={l.item} name="item" />
@@ -177,7 +181,7 @@ export default async function FinancePage(props: PageProps) {
                                 </form>
                               </div>
                             </details>
-                            <form action={deleteFinanceLine.bind(null, props.params.projectId, l.id)}>
+                            <form action={deleteFinanceLine.bind(null, project.id, l.id)}>
                               <Button variant="danger" type="submit">
                                 Delete
                               </Button>
@@ -211,4 +215,3 @@ export default async function FinancePage(props: PageProps) {
     </div>
   );
 }
-
