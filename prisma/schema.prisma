@@ -49,6 +49,8 @@ model User {
 
   completedInspectionReports SiteInspectionReport[] @relation("inspection_completed_by")
 
+  uploadedFiles StoredFile[] @relation("stored_file_uploaded_by")
+
   @@map("users")
 }
 
@@ -183,6 +185,12 @@ model LookupOption {
 
   lookupType LookupType @relation(fields: [lookupTypeId], references: [id], onDelete: Cascade)
 
+  ragProjects                   Project[]           @relation("project_rag_option")
+  attachmentCategoryAttachments ProjectAttachment[] @relation("attachment_category_option")
+  milestoneRagMilestones        ProjectMilestone[]  @relation("milestone_rag_option")
+  actionStatusItems             ProjectActionItem[] @relation("action_status_option")
+  actionPriorityItems           ProjectActionItem[] @relation("action_priority_option")
+
   @@unique([lookupTypeId, value])
   @@index([lookupTypeId, isActive, sortOrder])
   @@map("lookup_options")
@@ -205,7 +213,7 @@ model Project {
 
   client Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
   status ProjectStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
-  ragOption LookupOption? @relation(fields: [ragOptionId], references: [id], onDelete: SetNull)
+  ragOption LookupOption? @relation("project_rag_option", fields: [ragOptionId], references: [id], onDelete: SetNull)
 
   seniorManagerUser   User? @relation("project_senior_manager", fields: [seniorManagerUserId], references: [id], onDelete: SetNull)
   siteManagerUser     User? @relation("project_site_manager", fields: [siteManagerUserId], references: [id], onDelete: SetNull)
@@ -242,7 +250,7 @@ model StoredFile {
   sizeBytes       Int?     @map("size_bytes")
 
   uploadedById String? @db.Uuid @map("uploaded_by_id")
-  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedBy   User?   @relation("stored_file_uploaded_by", fields: [uploadedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -261,7 +269,7 @@ model ProjectAttachment {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   file    StoredFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  categoryOption LookupOption? @relation(fields: [categoryOptionId], references: [id], onDelete: SetNull)
+  categoryOption LookupOption? @relation("attachment_category_option", fields: [categoryOptionId], references: [id], onDelete: SetNull)
 
   uploadedById String? @db.Uuid @map("uploaded_by_id")
   uploadedBy   User?   @relation("attachment_uploaded_by", fields: [uploadedById], references: [id], onDelete: SetNull)
@@ -311,7 +319,7 @@ model ProjectMilestone {
   sortOrder Int @default(0) @map("sort_order")
 
   ragOptionId String? @db.Uuid @map("rag_option_id")
-  ragOption   LookupOption? @relation(fields: [ragOptionId], references: [id], onDelete: SetNull)
+  ragOption   LookupOption? @relation("milestone_rag_option", fields: [ragOptionId], references: [id], onDelete: SetNull)
 
   programStart    DateTime? @map("program_start")
   forecastStart   DateTime? @map("forecast_start")
