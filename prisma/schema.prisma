@@ -51,6 +51,14 @@ model User {
 
   uploadedFiles StoredFile[] @relation("stored_file_uploaded_by")
 
+  snagsResponsibleFor ProjectSnag[] @relation("snag_responsible_party")
+  snagsRaised         ProjectSnag[] @relation("snag_raised_by")
+  snagsUpdated        ProjectSnag[] @relation("snag_updated_by")
+
+  performedAuditEntries ProjectAuditTrailEntry[] @relation("audit_performed_by")
+
+  assignedInspectionItems SiteInspectionItem[] @relation("inspection_item_assigned_to")
+
   @@map("users")
 }
 
@@ -190,6 +198,10 @@ model LookupOption {
   milestoneRagMilestones        ProjectMilestone[]  @relation("milestone_rag_option")
   actionStatusItems             ProjectActionItem[] @relation("action_status_option")
   actionPriorityItems           ProjectActionItem[] @relation("action_priority_option")
+  snagStatusSnags               ProjectSnag[]       @relation("snag_status_option")
+  snagPrioritySnags             ProjectSnag[]       @relation("snag_priority_option")
+  inspectionItemStatusItems     SiteInspectionItem[] @relation("inspection_item_status_option")
+  inspectionSeverityItems       SiteInspectionItem[] @relation("inspection_item_severity_option")
 
   @@unique([lookupTypeId, value])
   @@index([lookupTypeId, isActive, sortOrder])
@@ -233,6 +245,8 @@ model Project {
   financeLines   ProjectFinanceLine[]
   attachments    ProjectAttachment[]
   inspectionReports SiteInspectionReport[]
+  snags          ProjectSnag[]
+  auditTrailEntries ProjectAuditTrailEntry[]
 
   @@index([clientId])
   @@index([statusId])
@@ -256,6 +270,7 @@ model StoredFile {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   attachments ProjectAttachment[]
+  snagAttachments ProjectSnagAttachment[]
   inspectionItemPhotos SiteInspectionItem[] @relation("inspection_item_photo")
 
   @@map("stored_files")
@@ -320,6 +335,8 @@ model ProjectMilestone {
 
   ragOptionId String? @db.Uuid @map("rag_option_id")
   ragOption   LookupOption? @relation("milestone_rag_option", fields: [ragOptionId], references: [id], onDelete: SetNull)
+
+  durationDays Int? @map("duration_days")
 
   programStart    DateTime? @map("program_start")
   forecastStart   DateTime? @map("forecast_start")
@@ -427,8 +444,24 @@ model SiteInspectionItem {
   itemTitle String @map("item_title")
   comment   String? @map("comment")
 
+  statusOptionId   String? @db.Uuid @map("status_option_id")
+  severityOptionId String? @db.Uuid @map("severity_option_id")
+  isSnag           Boolean @default(false) @map("is_snag")
+
+  snagId String? @unique @db.Uuid @map("snag_id")
+
+  assignedToUserId String? @db.Uuid @map("assigned_to_user_id")
+  actionRequired   String? @map("action_required")
+
   photoFileId String? @db.Uuid @map("photo_file_id")
   photoFile   StoredFile? @relation("inspection_item_photo", fields: [photoFileId], references: [id], onDelete: SetNull)
+
+  statusOption   LookupOption? @relation("inspection_item_status_option", fields: [statusOptionId], references: [id], onDelete: SetNull)
+  severityOption LookupOption? @relation("inspection_item_severity_option", fields: [severityOptionId], references: [id], onDelete: SetNull)
+
+  snag ProjectSnag? @relation("inspection_item_snag", fields: [snagId], references: [id], onDelete: SetNull)
+
+  assignedToUser User? @relation("inspection_item_assigned_to", fields: [assignedToUserId], references: [id], onDelete: SetNull)
 
   report SiteInspectionReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
@@ -437,4 +470,91 @@ model SiteInspectionItem {
 
   @@index([reportId])
   @@map("site_inspection_items")
+}
+
+model ProjectSnag {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  title       String  @map("title")
+  description String? @map("description")
+
+  statusOptionId   String? @db.Uuid @map("status_option_id")
+  priorityOptionId String? @db.Uuid @map("priority_option_id")
+
+  responsibleUserId String? @db.Uuid @map("responsible_user_id")
+
+  dateRaised        DateTime @default(now()) @map("date_raised")
+  targetClosureDate DateTime? @map("target_closure_date")
+  dateRectified     DateTime? @map("date_rectified")
+  dateClosed        DateTime? @map("date_closed")
+
+  internalCloseOutComment        String? @map("internal_close_out_comment")
+  additionalWorkRequiredComment  String? @map("additional_work_required_comment")
+
+  raisedById String? @db.Uuid @map("raised_by_id")
+  updatedById String? @db.Uuid @map("updated_by_id")
+  raisedBy   User?   @relation("snag_raised_by", fields: [raisedById], references: [id], onDelete: SetNull)
+  updatedBy  User?   @relation("snag_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  statusOption   LookupOption? @relation("snag_status_option", fields: [statusOptionId], references: [id], onDelete: SetNull)
+  priorityOption LookupOption? @relation("snag_priority_option", fields: [priorityOptionId], references: [id], onDelete: SetNull)
+
+  responsibleUser User? @relation("snag_responsible_party", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+
+  inspectionItem SiteInspectionItem? @relation("inspection_item_snag")
+
+  attachments ProjectSnagAttachment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([statusOptionId])
+  @@index([priorityOptionId])
+  @@index([responsibleUserId])
+  @@index([dateRaised])
+  @@map("project_snags")
+}
+
+model ProjectSnagAttachment {
+  id     String @id @default(uuid()) @db.Uuid @map("id")
+  snagId String @db.Uuid @map("snag_id")
+  fileId String @db.Uuid @map("file_id")
+
+  snag ProjectSnag @relation(fields: [snagId], references: [id], onDelete: Cascade)
+  file StoredFile  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([snagId])
+  @@map("project_snag_attachments")
+}
+
+model ProjectAuditTrailEntry {
+  id        String @id @default(uuid()) @db.Uuid @map("id")
+  projectId String @db.Uuid @map("project_id")
+
+  entityType String @map("entity_type")
+  entityId   String? @map("entity_id")
+  actionType String @map("action_type")
+
+  fieldName String? @map("field_name")
+  oldValue  String? @map("old_value")
+  newValue  String? @map("new_value")
+  summary   String? @map("summary")
+
+  performedByUserId String? @db.Uuid @map("performed_by_user_id")
+  performedByUser   User?   @relation("audit_performed_by", fields: [performedByUserId], references: [id], onDelete: SetNull)
+
+  performedAt DateTime @default(now()) @map("performed_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, performedAt])
+  @@index([entityType, actionType])
+  @@map("project_audit_trail_entries")
 }

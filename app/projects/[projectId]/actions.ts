@@ -8,6 +8,7 @@ import { requireUserId } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/rbac";
+import { writeAuditEntry } from "@/lib/audit/write";
 
 const UpdateProjectSchema = z.object({
   reference: z.string().trim().min(1).max(50),
@@ -26,6 +27,12 @@ export async function updateProject(projectId: string, formData: FormData) {
   const userId = await requireUserId();
   const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
   if (!canEdit) redirect(`/projects/${projectId}`);
+
+  const existing = await db.project.findUnique({
+    where: { id: projectId },
+    include: { client: true, status: true, ragOption: true }
+  });
+  if (!existing) redirect(`/projects/${projectId}?error=not_found`);
 
   const parsed = UpdateProjectSchema.safeParse({
     reference: formData.get("reference"),
@@ -64,6 +71,103 @@ export async function updateProject(projectId: string, formData: FormData) {
     });
   } catch {
     redirect(`/projects/${projectId}?error=save_failed`);
+  }
+
+  const changes: Array<{ field: string; oldValue: string | null; newValue: string | null; summary: string }> = [];
+
+  if (existing.reference !== parsed.data.reference) {
+    changes.push({
+      field: "reference",
+      oldValue: existing.reference,
+      newValue: parsed.data.reference,
+      summary: `Project reference changed from ${existing.reference} to ${parsed.data.reference}`
+    });
+  }
+  if (existing.name !== parsed.data.name) {
+    changes.push({
+      field: "name",
+      oldValue: existing.name,
+      newValue: parsed.data.name,
+      summary: "Project name updated"
+    });
+  }
+  if ((existing.notes ?? "") !== (parsed.data.notes ?? "")) {
+    changes.push({
+      field: "notes",
+      oldValue: null,
+      newValue: null,
+      summary: "Project notes updated"
+    });
+  }
+  if (existing.clientId !== parsed.data.clientId) {
+    changes.push({
+      field: "clientId",
+      oldValue: existing.client.name,
+      newValue: parsed.data.clientId,
+      summary: "Project client changed"
+    });
+  }
+  if (existing.statusId !== parsed.data.statusId) {
+    changes.push({
+      field: "statusId",
+      oldValue: existing.status.name,
+      newValue: parsed.data.statusId,
+      summary: "Project status changed"
+    });
+  }
+  if ((existing.ragOptionId ?? "") !== (parsed.data.ragOptionId ?? "")) {
+    changes.push({
+      field: "ragOptionId",
+      oldValue: existing.ragOption?.label ?? null,
+      newValue: parsed.data.ragOptionId || null,
+      summary: "Project RAG changed"
+    });
+  }
+  if ((existing.seniorManagerUserId ?? "") !== (parsed.data.seniorManagerUserId ?? "")) {
+    changes.push({
+      field: "seniorManagerUserId",
+      oldValue: existing.seniorManagerUserId ?? null,
+      newValue: parsed.data.seniorManagerUserId || null,
+      summary: "Senior manager updated"
+    });
+  }
+  if ((existing.siteManagerUserId ?? "") !== (parsed.data.siteManagerUserId ?? "")) {
+    changes.push({
+      field: "siteManagerUserId",
+      oldValue: existing.siteManagerUserId ?? null,
+      newValue: parsed.data.siteManagerUserId || null,
+      summary: "Site manager updated"
+    });
+  }
+  if ((existing.contractManagerUserId ?? "") !== (parsed.data.contractManagerUserId ?? "")) {
+    changes.push({
+      field: "contractManagerUserId",
+      oldValue: existing.contractManagerUserId ?? null,
+      newValue: parsed.data.contractManagerUserId || null,
+      summary: "Contract manager updated"
+    });
+  }
+  if ((existing.dueDate?.toISOString() ?? "") !== (dueDate?.toISOString() ?? "")) {
+    changes.push({
+      field: "dueDate",
+      oldValue: existing.dueDate?.toISOString() ?? null,
+      newValue: dueDate?.toISOString() ?? null,
+      summary: "Due date updated"
+    });
+  }
+
+  for (const c of changes) {
+    await writeAuditEntry({
+      projectId,
+      entityType: "project",
+      entityId: projectId,
+      actionType: "update",
+      fieldName: c.field,
+      oldValue: c.oldValue,
+      newValue: c.newValue,
+      summary: c.summary,
+      performedByUserId: userId
+    });
   }
 
   revalidatePath(`/projects/${projectId}`);

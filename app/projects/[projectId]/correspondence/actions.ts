@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireUserId } from "@/lib/auth/session";
+import { writeAuditEntry } from "@/lib/audit/write";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/rbac";
@@ -36,7 +37,7 @@ export async function createCorrespondence(projectId: string, formData: FormData
   if (Number.isNaN(occurredAt.getTime())) redirect(`/projects/${projectId}/correspondence?error=invalid_date`);
 
   try {
-    await db.projectCorrespondence.create({
+    const created = await db.projectCorrespondence.create({
       data: {
         projectId,
         fromAddress: parsed.data.fromAddress,
@@ -48,6 +49,15 @@ export async function createCorrespondence(projectId: string, formData: FormData
         provider: "manual",
         createdById: userId
       }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "correspondence",
+      entityId: created.id,
+      actionType: "create",
+      summary: `Correspondence added: ${created.subject}`,
+      performedByUserId: userId
     });
   } catch {
     redirect(`/projects/${projectId}/correspondence?error=create_failed`);
@@ -63,7 +73,16 @@ export async function deleteCorrespondence(projectId: string, correspondenceId: 
   if (!canEdit) redirect(`/projects/${projectId}/correspondence?error=forbidden`);
 
   try {
+    const existing = await db.projectCorrespondence.findUnique({ where: { id: correspondenceId } });
     await db.projectCorrespondence.delete({ where: { id: correspondenceId } });
+    await writeAuditEntry({
+      projectId,
+      entityType: "correspondence",
+      entityId: correspondenceId,
+      actionType: "delete",
+      summary: existing ? `Correspondence deleted: ${existing.subject}` : "Correspondence deleted",
+      performedByUserId: userId
+    });
   } catch {
     redirect(`/projects/${projectId}/correspondence?error=delete_failed`);
   }
@@ -71,4 +90,3 @@ export async function deleteCorrespondence(projectId: string, correspondenceId: 
   revalidatePath(`/projects/${projectId}/correspondence`);
   redirect(`/projects/${projectId}/correspondence?saved=1`);
 }
-

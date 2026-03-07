@@ -5,6 +5,7 @@ import { endOfWeek, format, startOfWeek } from "date-fns";
 import { AppShell } from "@/components/app/app-shell";
 import { EmptyState } from "@/components/app/empty-state";
 import { FilterPanel } from "@/components/app/filter-panel";
+import { SectionCard } from "@/components/app/section-card";
 import { StatCard } from "@/components/app/stat-card";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -116,6 +117,38 @@ export default async function DashboardPage(props: PageProps) {
     statusIdComplete ? db.project.count({ where: { statusId: statusIdComplete } }) : Promise.resolve(0)
   ]);
 
+  const now = new Date();
+  const [
+    myOpenActionsCount,
+    myOpenSnagsCount,
+    myOverdueActionsCount,
+    myOverdueSnagsCount,
+    myActions,
+    mySnags
+  ] = await Promise.all([
+    db.projectActionItem.count({ where: { ownerUserId: userId, actualClosureDate: null } }),
+    db.projectSnag.count({ where: { responsibleUserId: userId, dateClosed: null } }),
+    db.projectActionItem.count({
+      where: { ownerUserId: userId, actualClosureDate: null, requiredClosureDate: { lt: now } }
+    }),
+    db.projectSnag.count({
+      where: { responsibleUserId: userId, dateClosed: null, targetClosureDate: { lt: now } }
+    }),
+    db.projectActionItem.findMany({
+      where: { ownerUserId: userId, actualClosureDate: null },
+      include: { project: { select: { id: true, name: true, reference: true } }, statusOption: true, priorityOption: true },
+      orderBy: [{ requiredClosureDate: "asc" }, { createdAt: "desc" }],
+      take: 6
+    }),
+    db.projectSnag.findMany({
+      where: { responsibleUserId: userId, dateClosed: null },
+      include: { project: { select: { id: true, name: true, reference: true } }, statusOption: true, priorityOption: true },
+      orderBy: [{ targetClosureDate: "asc" }, { dateRaised: "desc" }],
+      take: 6
+    })
+  ]);
+  const myOverdueTotal = myOverdueActionsCount + myOverdueSnagsCount;
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const baseParams = new URLSearchParams();
@@ -153,6 +186,115 @@ export default async function DashboardPage(props: PageProps) {
         <StatCard label="In progress" value={inProgressAll} />
         <StatCard label="Due this week" hint={`${format(weekStart, "MMM d")}–${format(weekEnd, "MMM d")}`} value={dueThisWeekAll} />
         <StatCard label="Completed" value={completedAll} />
+      </div>
+
+      <div className="mt-4">
+        <SectionCard
+          title="My Work"
+          subtitle="Assigned actions and snags that need your attention."
+          actions={
+            <div className="flex items-center gap-2">
+              <Badge tone="neutral">{myOpenActionsCount + myOpenSnagsCount} open</Badge>
+              <Badge tone={myOverdueTotal ? "danger" : "neutral"}>{myOverdueTotal} overdue</Badge>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <StatCard label="My open actions" value={myOpenActionsCount} />
+            <StatCard label="My open snags" value={myOpenSnagsCount} />
+            <StatCard label="My overdue items" value={myOverdueTotal} />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="dd-card p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-brand-primary">Critical action items</p>
+                <Badge tone="neutral">{myActions.length}</Badge>
+              </div>
+              {myActions.length === 0 ? (
+                <p className="mt-3 text-sm text-brand-secondary">No open action items assigned to you.</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {myActions.map((a) => {
+                    const overdue = a.requiredClosureDate ? a.requiredClosureDate < now : false;
+                    return (
+                      <Link
+                        key={a.id}
+                        className="block rounded-lg border border-app-border bg-white p-3 hover:bg-app-bg/50 transition-colors"
+                        href={`/projects/${a.projectId}/actions`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-brand-primary">{a.title}</p>
+                            <p className="mt-1 text-xs text-brand-secondary">
+                              {a.project.reference} • {a.project.name}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Badge tone="neutral">{a.statusOption?.label ?? "Status —"}</Badge>
+                              <Badge tone="neutral">{a.priorityOption?.label ?? "Priority —"}</Badge>
+                              {a.requiredClosureDate ? (
+                                <Badge tone={overdue ? "danger" : "neutral"}>
+                                  Due {format(a.requiredClosureDate, "MMM d")}
+                                </Badge>
+                              ) : (
+                                <Badge tone="neutral">No due date</Badge>
+                              )}
+                            </div>
+                          </div>
+                          {overdue ? <Badge tone="danger">Overdue</Badge> : null}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="dd-card p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-brand-primary">Snags</p>
+                <Badge tone="neutral">{mySnags.length}</Badge>
+              </div>
+              {mySnags.length === 0 ? (
+                <p className="mt-3 text-sm text-brand-secondary">No open snags assigned to you.</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {mySnags.map((s) => {
+                    const overdue = s.targetClosureDate ? s.targetClosureDate < now : false;
+                    return (
+                      <Link
+                        key={s.id}
+                        className="block rounded-lg border border-app-border bg-white p-3 hover:bg-app-bg/50 transition-colors"
+                        href={`/projects/${s.projectId}/snags`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-brand-primary">{s.title}</p>
+                            <p className="mt-1 text-xs text-brand-secondary">
+                              {s.project.reference} • {s.project.name}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Badge tone="neutral">{s.statusOption?.label ?? "Status —"}</Badge>
+                              <Badge tone="neutral">{s.priorityOption?.label ?? "Priority —"}</Badge>
+                              {s.targetClosureDate ? (
+                                <Badge tone={overdue ? "danger" : "neutral"}>
+                                  Target {format(s.targetClosureDate, "MMM d")}
+                                </Badge>
+                              ) : (
+                                <Badge tone="neutral">No target</Badge>
+                              )}
+                            </div>
+                          </div>
+                          {overdue ? <Badge tone="danger">Overdue</Badge> : null}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </SectionCard>
       </div>
 
       <div className="mt-4">

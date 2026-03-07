@@ -492,6 +492,175 @@ async function main() {
     })
   ]);
 
+  const snagStatusType = await upsertLookupType({
+    key: "snag_status",
+    name: "Snag status",
+    description: "Status values for snag/defect closeout workflow",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+  const snagPriorityType = await upsertLookupType({
+    key: "snag_priority",
+    name: "Snag priority",
+    description: "Priority values for snag/defect closeout workflow",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+  const inspectionStatusType = await upsertLookupType({
+    key: "inspection_item_status",
+    name: "Inspection item status",
+    description: "Status values for site inspection items",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+  const inspectionSeverityType = await upsertLookupType({
+    key: "inspection_severity",
+    name: "Inspection severity",
+    description: "Severity values for inspection items and snags",
+    createdById: adminUser.id,
+    updatedById: adminUser.id
+  });
+
+  const [snagOpen, snagInProgress, snagRectified, snagClosed, snagAdditional] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: snagStatusType.id,
+      label: "Open",
+      value: "open",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagStatusType.id,
+      label: "In Progress",
+      value: "in_progress",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagStatusType.id,
+      label: "Rectified",
+      value: "rectified",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagStatusType.id,
+      label: "Closed",
+      value: "closed",
+      sortOrder: 40,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagStatusType.id,
+      label: "Additional Work Required",
+      value: "additional_work_required",
+      sortOrder: 50,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const [snagPrioLow, snagPrioMed, snagPrioHigh, snagPrioCritical] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: snagPriorityType.id,
+      label: "Low",
+      value: "low",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagPriorityType.id,
+      label: "Medium",
+      value: "medium",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagPriorityType.id,
+      label: "High",
+      value: "high",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: snagPriorityType.id,
+      label: "Critical",
+      value: "critical",
+      sortOrder: 40,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const [inspOk, inspActionReq, inspResolved] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: inspectionStatusType.id,
+      label: "OK",
+      value: "ok",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: inspectionStatusType.id,
+      label: "Action Required",
+      value: "action_required",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: inspectionStatusType.id,
+      label: "Resolved",
+      value: "resolved",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
+  const [sevLow, sevMed, sevHigh, sevCritical] = await Promise.all([
+    upsertLookupOption({
+      lookupTypeId: inspectionSeverityType.id,
+      label: "Low",
+      value: "low",
+      sortOrder: 10,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: inspectionSeverityType.id,
+      label: "Medium",
+      value: "medium",
+      sortOrder: 20,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: inspectionSeverityType.id,
+      label: "High",
+      value: "high",
+      sortOrder: 30,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    }),
+    upsertLookupOption({
+      lookupTypeId: inspectionSeverityType.id,
+      label: "Critical",
+      value: "critical",
+      sortOrder: 40,
+      createdById: adminUser.id,
+      updatedById: adminUser.id
+    })
+  ]);
+
   const projects = await db.project.findMany({ orderBy: [{ reference: "asc" }] });
   const managerUser = userByEmail.get("manager@dalmoy.local") ?? adminUser;
 
@@ -629,12 +798,58 @@ async function main() {
           projectReferenceSnapshot: p.reference
         }
       });
-      await db.siteInspectionItem.createMany({
+      const item = await db.siteInspectionItem.create({
+        data: {
+          reportId: report.id,
+          itemTitle: "Fire doors installed and tagged",
+          comment: "Labels present, check closers next visit.",
+          statusOptionId: inspOk.id,
+          severityOptionId: sevLow.id,
+          isSnag: false
+        }
+      });
+
+      // Seed a snag linked to the inspection item for one demo project.
+      if (p.reference === "DD-0003") {
+        const snag = await db.projectSnag.create({
+          data: {
+            projectId: p.id,
+            title: "Touch-up paint required to feature wall",
+            description: "Surface finish uneven near reception joinery.",
+            statusOptionId: snagOpen.id,
+            priorityOptionId: snagPrioMed.id,
+            responsibleUserId: managerUser.id,
+            targetClosureDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5),
+            raisedById: managerUser.id,
+            updatedById: managerUser.id
+          }
+        });
+        await db.siteInspectionItem.update({
+          where: { id: item.id },
+          data: {
+            isSnag: true,
+            snagId: snag.id,
+            statusOptionId: inspActionReq.id,
+            severityOptionId: sevMed.id
+          }
+        });
+      }
+    }
+
+    const snagCount = await db.projectSnag.count({ where: { projectId: p.id } });
+    if (snagCount === 0) {
+      await db.projectSnag.createMany({
         data: [
           {
-            reportId: report.id,
-            itemTitle: "Fire doors installed and tagged",
-            comment: "Labels present, check closers next visit."
+            projectId: p.id,
+            title: "Sealant finish to WC cubicle junctions",
+            description: "Gaps visible at lower skirting line.",
+            statusOptionId: snagInProgress.id,
+            priorityOptionId: snagPrioLow.id,
+            responsibleUserId: managerUser.id,
+            targetClosureDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 10),
+            raisedById: adminUser.id,
+            updatedById: adminUser.id
           }
         ]
       });

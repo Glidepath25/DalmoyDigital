@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
+import { writeAuditEntry } from "@/lib/audit/write";
 import { requireUserId } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -42,7 +43,7 @@ export async function createFinanceLine(projectId: string, formData: FormData) {
   if (!parsed.success) redirect(`/projects/${projectId}/finance?error=invalid`);
 
   try {
-    await db.projectFinanceLine.create({
+    const created = await db.projectFinanceLine.create({
       data: {
         projectId,
         item: parsed.data.item,
@@ -54,6 +55,15 @@ export async function createFinanceLine(projectId: string, formData: FormData) {
         createdById: userId,
         updatedById: userId
       }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "finance_line",
+      entityId: created.id,
+      actionType: "create",
+      summary: `Finance line added: ${created.item}`,
+      performedByUserId: userId
     });
   } catch {
     redirect(`/projects/${projectId}/finance?error=create_failed`);
@@ -79,7 +89,8 @@ export async function updateFinanceLine(projectId: string, lineId: string, formD
   if (!parsed.success) redirect(`/projects/${projectId}/finance?error=invalid`);
 
   try {
-    await db.projectFinanceLine.update({
+    const existing = await db.projectFinanceLine.findUnique({ where: { id: lineId } });
+    const updated = await db.projectFinanceLine.update({
       where: { id: lineId },
       data: {
         item: parsed.data.item,
@@ -90,6 +101,15 @@ export async function updateFinanceLine(projectId: string, lineId: string, formD
         invoicedCost: toDecimalOrNull(parsed.data.invoicedCost),
         updatedById: userId
       }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "finance_line",
+      entityId: updated.id,
+      actionType: "update",
+      summary: existing ? `Finance line updated: ${existing.item}` : `Finance line updated: ${updated.item}`,
+      performedByUserId: userId
     });
   } catch {
     redirect(`/projects/${projectId}/finance?error=update_failed`);
@@ -105,7 +125,16 @@ export async function deleteFinanceLine(projectId: string, lineId: string) {
   if (!canEdit) redirect(`/projects/${projectId}/finance?error=forbidden`);
 
   try {
+    const existing = await db.projectFinanceLine.findUnique({ where: { id: lineId } });
     await db.projectFinanceLine.delete({ where: { id: lineId } });
+    await writeAuditEntry({
+      projectId,
+      entityType: "finance_line",
+      entityId: lineId,
+      actionType: "delete",
+      summary: existing ? `Finance line deleted: ${existing.item}` : "Finance line deleted",
+      performedByUserId: userId
+    });
   } catch {
     redirect(`/projects/${projectId}/finance?error=delete_failed`);
   }

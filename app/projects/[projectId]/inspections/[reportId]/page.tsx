@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/app/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { requirePermission } from "@/lib/auth/guards";
 import { requireUserId } from "@/lib/auth/session";
@@ -23,6 +24,14 @@ function toString(v: string | string[] | undefined) {
   return Array.isArray(v) ? v[0] : v;
 }
 
+function badgeToneFromValue(v: string | null | undefined) {
+  const value = (v ?? "").toLowerCase();
+  if (value.includes("critical") || value.includes("high")) return "danger" as const;
+  if (value.includes("action") || value.includes("medium") || value.includes("amber") || value.includes("warning")) return "warning" as const;
+  if (value.includes("ok") || value.includes("resolved") || value.includes("low") || value.includes("green")) return "success" as const;
+  return "neutral" as const;
+}
+
 export default async function InspectionReportPage(props: PageProps) {
   await requirePermission(PERMISSIONS.projectsRead);
   const userId = await requireUserId();
@@ -34,9 +43,35 @@ export default async function InspectionReportPage(props: PageProps) {
 
   const report = await db.siteInspectionReport.findFirst({
     where: { id: props.params.reportId, projectId: props.params.projectId },
-    include: { completedByUser: true, items: { include: { photoFile: true }, orderBy: { createdAt: "desc" } } }
+    include: {
+      completedByUser: true,
+      items: {
+        include: { photoFile: true, statusOption: true, severityOption: true, assignedToUser: true, snag: true },
+        orderBy: { createdAt: "desc" }
+      }
+    }
   });
   if (!report) notFound();
+
+  const [statusType, severityType, users] = await Promise.all([
+    db.lookupType.findUnique({
+      where: { key: "inspection_item_status" },
+      include: {
+        options: { where: { isActive: true, archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { label: "asc" }] }
+      }
+    }),
+    db.lookupType.findUnique({
+      where: { key: "inspection_severity" },
+      include: {
+        options: { where: { isActive: true, archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { label: "asc" }] }
+      }
+    }),
+    db.user.findMany({ where: { isActive: true }, orderBy: [{ name: "asc" }, { email: "asc" }] })
+  ]);
+
+  const statusOptions = statusType?.options ?? [];
+  const severityOptions = severityType?.options ?? [];
+  const snagCount = report.items.filter((i) => i.isSnag).length;
 
   return (
     <div className="space-y-4">
@@ -60,8 +95,13 @@ export default async function InspectionReportPage(props: PageProps) {
         <div className="xl:col-span-8 space-y-4">
           <SectionCard
             title="Inspection items"
-            subtitle="Record observations, add comments, and attach a photo."
-            actions={<Badge tone="neutral">{report.items.length} items</Badge>}
+            subtitle="Record observations, assign follow-ups, and optionally raise a snag."
+            actions={
+              <div className="flex items-center gap-2">
+                <Badge tone="neutral">{report.items.length} items</Badge>
+                <Badge tone={snagCount ? "warning" : "neutral"}>{snagCount} snags</Badge>
+              </div>
+            }
           >
             {report.items.length === 0 ? (
               <EmptyState title="No items yet" description="Add the first inspection item to this report." />
@@ -73,6 +113,29 @@ export default async function InspectionReportPage(props: PageProps) {
                       <div>
                         <p className="text-sm font-semibold text-brand-primary">{it.itemTitle}</p>
                         {it.comment ? <p className="mt-1 text-sm text-brand-secondary">{it.comment}</p> : null}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {it.statusOption ? (
+                            <Badge tone={badgeToneFromValue(it.statusOption.value)}>{it.statusOption.label}</Badge>
+                          ) : (
+                            <Badge tone="neutral">Status —</Badge>
+                          )}
+                          {it.severityOption ? (
+                            <Badge tone={badgeToneFromValue(it.severityOption.value)}>{it.severityOption.label}</Badge>
+                          ) : (
+                            <Badge tone="neutral">Severity —</Badge>
+                          )}
+                          {it.assignedToUser ? (
+                            <Badge tone="neutral">Assigned: {it.assignedToUser.name ?? it.assignedToUser.email}</Badge>
+                          ) : (
+                            <Badge tone="neutral">Unassigned</Badge>
+                          )}
+                          {it.isSnag ? <Badge tone="warning">Snag</Badge> : null}
+                        </div>
+                        {it.actionRequired ? (
+                          <p className="mt-2 text-sm text-brand-secondary">
+                            <span className="font-semibold text-brand-primary">Action required:</span> {it.actionRequired}
+                          </p>
+                        ) : null}
                         <p className="mt-2 text-xs text-brand-secondary">Added {format(it.createdAt, "yyyy-MM-dd HH:mm")}</p>
                       </div>
                       {it.photoFileId ? (
@@ -124,10 +187,53 @@ export default async function InspectionReportPage(props: PageProps) {
                 <label className="text-xs font-semibold text-brand-secondary">Recorded item</label>
                 <Input className="mt-1" disabled={!canEdit} name="itemTitle" placeholder="e.g. Fire stopping incomplete" />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-brand-secondary">Status</label>
+                  <Select className="mt-1" disabled={!canEdit} name="statusOptionId" defaultValue="">
+                    <option value="">—</option>
+                    {statusOptions.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-brand-secondary">Severity</label>
+                  <Select className="mt-1" disabled={!canEdit} name="severityOptionId" defaultValue="">
+                    <option value="">—</option>
+                    {severityOptions.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-brand-secondary">Assign to</label>
+                <Select className="mt-1" disabled={!canEdit} name="assignedToUserId" defaultValue="">
+                  <option value="">—</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name ? `${u.name} (${u.email})` : u.email}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-brand-secondary">Action required</label>
+                <Textarea className="mt-1 min-h-[88px]" disabled={!canEdit} name="actionRequired" placeholder="What needs to be done next?" />
+              </div>
               <div>
                 <label className="text-xs font-semibold text-brand-secondary">Comment</label>
                 <Textarea className="mt-1 min-h-[88px]" disabled={!canEdit} name="comment" placeholder="Optional comment..." />
               </div>
+              <label className="flex items-center gap-2 text-sm text-brand-primary">
+                <input className="h-4 w-4 rounded border border-app-border" type="checkbox" name="isSnag" disabled={!canEdit} />
+                Raise as snag (adds to Snag List)
+              </label>
               <div>
                 <label className="text-xs font-semibold text-brand-secondary">Photo</label>
                 <Input className="mt-1" disabled={!canEdit} name="photo" type="file" />
@@ -142,4 +248,3 @@ export default async function InspectionReportPage(props: PageProps) {
     </div>
   );
 }
-

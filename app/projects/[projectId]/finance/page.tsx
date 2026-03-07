@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
+import { StatCard } from "@/components/app/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ export default async function FinancePage(props: PageProps) {
     },
     { tendered: 0, qty: 0, actual: 0, invoiced: 0, margin: 0 }
   );
+  const marginPct = totals.invoiced > 0 ? (totals.margin / totals.invoiced) * 100 : null;
 
   return (
     <div className="space-y-4">
@@ -69,6 +71,14 @@ export default async function FinancePage(props: PageProps) {
       >
         {saved ? <p className="mb-2 text-sm font-semibold text-semantic-success">Saved.</p> : null}
         {error ? <p className="mb-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+          <StatCard label="Total tendered" value={eur.format(totals.tendered)} />
+          <StatCard label="Total actual" value={eur.format(totals.actual)} />
+          <StatCard label="Total invoiced" value={eur.format(totals.invoiced)} />
+          <StatCard label="Total margin" value={eur.format(totals.margin)} hint={totals.margin < 0 ? "Negative margin" : undefined} />
+          <StatCard label="Margin %" value={marginPct === null ? "—" : `${marginPct.toFixed(1)}%`} />
+        </div>
 
         {canEdit ? (
           <div className="dd-card p-4 mb-3">

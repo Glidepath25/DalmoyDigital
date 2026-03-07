@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { writeAuditEntry } from "@/lib/audit/write";
 import { requireUserId } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -29,6 +30,7 @@ export async function uploadAttachment(projectId: string, formData: FormData) {
   if (file.size <= 0) redirect(`/projects/${projectId}/attachments?error=empty_file`);
 
   let storedFileId: string;
+  let storedOriginalName: string;
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const stored = await storeLocalBuffer({
@@ -49,18 +51,28 @@ export async function uploadAttachment(projectId: string, formData: FormData) {
     });
 
     storedFileId = created.id;
+    storedOriginalName = created.originalName;
   } catch {
     redirect(`/projects/${projectId}/attachments?error=store_failed`);
   }
 
   try {
-    await db.projectAttachment.create({
+    const attachment = await db.projectAttachment.create({
       data: {
         projectId,
         fileId: storedFileId,
         categoryOptionId: parsed.data.categoryOptionId || null,
         uploadedById: userId
       }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "attachment",
+      entityId: attachment.id,
+      actionType: "create",
+      summary: `Attachment uploaded: ${storedOriginalName}`,
+      performedByUserId: userId
     });
   } catch {
     redirect(`/projects/${projectId}/attachments?error=create_failed`);
@@ -69,4 +81,3 @@ export async function uploadAttachment(projectId: string, formData: FormData) {
   revalidatePath(`/projects/${projectId}/attachments`);
   redirect(`/projects/${projectId}/attachments?saved=1`);
 }
-

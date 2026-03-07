@@ -11,7 +11,9 @@ const TABS: Array<{ key: string; label: string; path: (projectId: string) => str
   { key: "actions", label: "Critical Action Items", path: (id) => `/projects/${id}/actions` },
   { key: "finance", label: "Finance", path: (id) => `/projects/${id}/finance` },
   { key: "attachments", label: "Attachments", path: (id) => `/projects/${id}/attachments` },
-  { key: "inspections", label: "Site Inspection Reports", path: (id) => `/projects/${id}/inspections` }
+  { key: "inspections", label: "Site Inspection Reports", path: (id) => `/projects/${id}/inspections` },
+  { key: "snags", label: "Snag List", path: (id) => `/projects/${id}/snags` },
+  { key: "audit", label: "Audit Trail", path: (id) => `/projects/${id}/audit` }
 ];
 
 export function ProjectTabsNav(props: { projectId: string }) {
@@ -46,4 +48,3 @@ export function ProjectTabsNav(props: { projectId: string }) {
     </div>
   );
 }
-

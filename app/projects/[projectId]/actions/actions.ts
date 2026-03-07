@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { writeAuditEntry } from "@/lib/audit/write";
 import { requireUserId } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -41,7 +42,7 @@ export async function createActionItem(projectId: string, formData: FormData) {
   if (!parsed.success) redirect(`/projects/${projectId}/actions?error=invalid`);
 
   try {
-    await db.projectActionItem.create({
+    const created = await db.projectActionItem.create({
       data: {
         projectId,
         title: parsed.data.title,
@@ -53,6 +54,15 @@ export async function createActionItem(projectId: string, formData: FormData) {
         createdById: userId,
         updatedById: userId
       }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "action_item",
+      entityId: created.id,
+      actionType: "create",
+      summary: `Action item created: ${created.title}`,
+      performedByUserId: userId
     });
   } catch {
     redirect(`/projects/${projectId}/actions?error=create_failed`);
@@ -78,7 +88,8 @@ export async function updateActionItem(projectId: string, actionItemId: string, 
   if (!parsed.success) redirect(`/projects/${projectId}/actions?error=invalid`);
 
   try {
-    await db.projectActionItem.update({
+    const existing = await db.projectActionItem.findUnique({ where: { id: actionItemId } });
+    const updated = await db.projectActionItem.update({
       where: { id: actionItemId },
       data: {
         title: parsed.data.title,
@@ -89,6 +100,15 @@ export async function updateActionItem(projectId: string, actionItemId: string, 
         actualClosureDate: parseDateOrNull(parsed.data.actualClosureDate) as Date | null,
         updatedById: userId
       }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "action_item",
+      entityId: updated.id,
+      actionType: "update",
+      summary: existing ? `Action item updated: ${existing.title}` : `Action item updated: ${updated.title}`,
+      performedByUserId: userId
     });
   } catch {
     redirect(`/projects/${projectId}/actions?error=update_failed`);
@@ -104,7 +124,16 @@ export async function deleteActionItem(projectId: string, actionItemId: string) 
   if (!canEdit) redirect(`/projects/${projectId}/actions?error=forbidden`);
 
   try {
+    const existing = await db.projectActionItem.findUnique({ where: { id: actionItemId } });
     await db.projectActionItem.delete({ where: { id: actionItemId } });
+    await writeAuditEntry({
+      projectId,
+      entityType: "action_item",
+      entityId: actionItemId,
+      actionType: "delete",
+      summary: existing ? `Action item deleted: ${existing.title}` : "Action item deleted",
+      performedByUserId: userId
+    });
   } catch {
     redirect(`/projects/${projectId}/actions?error=delete_failed`);
   }
@@ -112,4 +141,3 @@ export async function deleteActionItem(projectId: string, actionItemId: string) 
   revalidatePath(`/projects/${projectId}/actions`);
   redirect(`/projects/${projectId}/actions?saved=1`);
 }
-
