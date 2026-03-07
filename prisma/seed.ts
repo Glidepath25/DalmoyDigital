@@ -758,6 +758,45 @@ async function main() {
       });
     }
 
+    const actionCommentCount = await db.projectActionComment.count({ where: { actionItem: { projectId: p.id } } });
+    if (actionCommentCount === 0) {
+      const firstActions = await db.projectActionItem.findMany({
+        where: { projectId: p.id },
+        orderBy: [{ createdAt: "asc" }],
+        take: 2
+      });
+      if (firstActions[0]) {
+        await db.projectActionComment.createMany({
+          data: [
+            {
+              actionItemId: firstActions[0].id,
+              userId: managerUser.id,
+              comment: "Initial review complete. Awaiting confirmation from client.",
+              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 10)
+            },
+            {
+              actionItemId: firstActions[0].id,
+              userId: adminUser.id,
+              comment: "Chased supplier for updated lead times.",
+              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3)
+            }
+          ]
+        });
+      }
+      if (firstActions[1]) {
+        await db.projectActionComment.createMany({
+          data: [
+            {
+              actionItemId: firstActions[1].id,
+              userId: adminUser.id,
+              comment: "Draft prepared. Sending for internal review.",
+              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6)
+            }
+          ]
+        });
+      }
+    }
+
     const financeCount = await db.projectFinanceLine.count({ where: { projectId: p.id } });
     if (financeCount === 0) {
       await db.projectFinanceLine.createMany({

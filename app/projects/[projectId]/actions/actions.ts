@@ -19,6 +19,10 @@ const CreateActionSchema = z.object({
   actualClosureDate: z.string().optional().or(z.literal(""))
 });
 
+const ActionCommentSchema = z.object({
+  comment: z.string().trim().min(1).max(2000)
+});
+
 function parseDateOrNull(v: string | undefined) {
   if (!v) return null;
   const d = new Date(v);
@@ -139,5 +143,44 @@ export async function deleteActionItem(projectId: string, actionItemId: string) 
   }
 
   revalidatePath(`/projects/${projectId}/actions`);
+  redirect(`/projects/${projectId}/actions?saved=1`);
+}
+
+export async function addActionComment(projectId: string, actionItemId: string, formData: FormData) {
+  const userId = await requireUserId();
+  const canEdit = await hasPermission(userId, PERMISSIONS.projectsUpdate);
+  if (!canEdit) redirect(`/projects/${projectId}/actions?error=forbidden`);
+
+  const parsed = ActionCommentSchema.safeParse({
+    comment: formData.get("comment")
+  });
+  if (!parsed.success) redirect(`/projects/${projectId}/actions?error=comment_invalid`);
+
+  const actionItem = await db.projectActionItem.findFirst({ where: { id: actionItemId, projectId } });
+  if (!actionItem) redirect(`/projects/${projectId}/actions?error=not_found`);
+
+  try {
+    const created = await db.projectActionComment.create({
+      data: {
+        actionItemId,
+        userId,
+        comment: parsed.data.comment
+      }
+    });
+
+    await writeAuditEntry({
+      projectId,
+      entityType: "action_comment",
+      entityId: created.id,
+      actionType: "create",
+      summary: `Action comment added: ${actionItem.title}`,
+      performedByUserId: userId
+    });
+  } catch {
+    redirect(`/projects/${projectId}/actions?error=comment_create_failed`);
+  }
+
+  revalidatePath(`/projects/${projectId}/actions`);
+  revalidatePath(`/projects/${projectId}/audit`);
   redirect(`/projects/${projectId}/actions?saved=1`);
 }

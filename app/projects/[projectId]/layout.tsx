@@ -2,6 +2,7 @@ import type React from "react";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app/app-shell";
+import { DownloadLink } from "@/components/app/download-link";
 import { ProjectTabsNav } from "@/components/app/project-tabs-nav";
 import { requirePermission } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
@@ -20,7 +21,11 @@ export default async function ProjectWorkspaceLayout(props: { params: { projectI
   const subtitle = `${project.reference} \u2022 ${project.client.name}`;
 
   return (
-    <AppShell title={project.name} subtitle={subtitle}>
+    <AppShell
+      title={project.name}
+      subtitle={subtitle}
+      actions={<DownloadLink href={`/api/v1/projects/${project.id}/pack`} label="Download project pack (PDF)" variant="primary" />}
+    >
       <div className="space-y-4">
         <ProjectTabsNav projectId={project.id} />
         {props.children}

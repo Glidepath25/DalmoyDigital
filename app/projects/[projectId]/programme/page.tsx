@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
+import { DownloadLink } from "@/components/app/download-link";
 import { EmptyState } from "@/components/app/empty-state";
 import { ProgrammeTimeline } from "@/components/app/programme-timeline";
 import { SectionCard } from "@/components/app/section-card";
@@ -113,6 +114,7 @@ export default async function ProgrammePage(props: PageProps) {
             <div className="flex items-center gap-2">
               <Badge tone="neutral">{milestones.length} milestones</Badge>
               <Badge tone={overallLevel === 2 ? "danger" : overallLevel === 1 ? "warning" : "success"}>{overallLabel}</Badge>
+              <DownloadLink href={`/api/v1/projects/${project.id}/programme/export`} label="Export CSV" />
             </div>
           )
         }

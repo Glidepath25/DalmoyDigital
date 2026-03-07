@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
+import { DownloadLink } from "@/components/app/download-link";
 import { StatCard } from "@/components/app/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,12 @@ export default async function FinancePage(props: PageProps) {
       <DataTableShell
         title="Finance"
         subtitle="Table-based cost tracker (Phase 1). Margin is invoiced minus actual."
-        actions={<Badge tone="neutral">{lines.length} lines</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge tone="neutral">{lines.length} lines</Badge>
+            <DownloadLink href={`/api/v1/projects/${project.id}/finance/export`} label="Export CSV" />
+          </div>
+        }
       >
         {saved ? <p className="mb-2 text-sm font-semibold text-semantic-success">Saved.</p> : null}
         {error ? <p className="mb-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}

@@ -5,7 +5,9 @@ Project tracking platform for construction fitout projects — from costing thro
 Phase 1 delivers:
 - Authentication + RBAC (Admin / Manager / Standard User / Read Only)
 - Dashboard with project list, search, filters, pagination
-- Project workspace module with tabs (overview, correspondence, programme, actions, finance, attachments, inspections)
+- Project workspace module with tabs (overview, correspondence, programme, actions, finance, attachments, inspections, snags, audit)
+- CSV export downloads for key project tables + a PDF project pack export
+- Timestamped progress updates on Critical Action Items
 - Admin area for users, projects, and dropdown/lookup values
 - PostgreSQL + Prisma schema, migration, and seed demo data
 - API-first foundation under `/api/v1/*` (web + future mobile)
@@ -16,6 +18,7 @@ Phase 1 delivers:
 - Prisma ORM
 - NextAuth (Credentials provider)
 - Tailwind CSS
+- PDF export: `pdfkit` (server-side PDF generation)
 
 ## Folder structure (high level)
 - `app/` — UI routes (server components) + route handlers (API)

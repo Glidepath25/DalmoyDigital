@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
+import { DownloadLink } from "@/components/app/download-link";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/rbac";
 
-import { createSnag, updateSnag, uploadSnagPhoto } from "./actions";
+import { updateSnag, uploadSnagPhoto } from "./actions";
 
 type PageProps = { params: { projectId: string }; searchParams?: Record<string, string | string[] | undefined> };
 
@@ -39,6 +40,21 @@ function badgeToneFromValue(v: string | null | undefined) {
   return "neutral" as const;
 }
 
+function snagErrorMessage(code: string | undefined) {
+  if (!code) return null;
+  if (code === "title_required") return "Title is required.";
+  if (code === "invalid_status") return "Invalid status selected.";
+  if (code === "invalid_priority") return "Invalid priority selected.";
+  if (code === "invalid_responsible") return "Invalid responsible party selected.";
+  if (code === "invalid_target_date") return "Invalid target closure date.";
+  if (code === "forbidden") return "You don’t have permission to create or update snags.";
+  if (code === "create_failed") return "Create failed. Please try again.";
+  if (code === "update_failed") return "Update failed. Please try again.";
+  if (code === "upload_failed") return "Upload failed. Please try again.";
+  if (code === "invalid") return "Invalid submission. Please check required fields.";
+  return `Error: ${code}`;
+}
+
 export default async function SnagsPage(props: PageProps) {
   await requirePermission(PERMISSIONS.projectsRead);
   const userId = await requireUserId();
@@ -49,6 +65,7 @@ export default async function SnagsPage(props: PageProps) {
 
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
+  const errorMessage = snagErrorMessage(error);
 
   const statusId = (toString(props.searchParams?.status) ?? "").trim();
   const priorityId = (toString(props.searchParams?.priority) ?? "").trim();
@@ -104,6 +121,7 @@ export default async function SnagsPage(props: PageProps) {
         actions={
           <div className="flex items-center gap-2">
             <Badge tone="neutral">{snags.length} snags</Badge>
+            <DownloadLink href={`/api/v1/projects/${project.id}/snags/export`} label="Export CSV" />
             <Link className="text-sm font-semibold text-brand-accent hover:underline" href={`/projects/${project.id}/inspections`}>
               Raise via inspection →
             </Link>
@@ -111,7 +129,7 @@ export default async function SnagsPage(props: PageProps) {
         }
       >
         {saved ? <p className="mb-2 text-sm font-semibold text-semantic-success">Saved.</p> : null}
-        {error ? <p className="mb-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
+        {errorMessage ? <p className="mb-2 text-sm font-semibold text-semantic-danger">{errorMessage}</p> : null}
 
         <div className="dd-card p-4 mb-3">
           <p className="text-sm font-semibold text-brand-primary">Filters</p>
@@ -167,7 +185,7 @@ export default async function SnagsPage(props: PageProps) {
         {canEdit ? (
           <div className="dd-card p-4 mb-3">
             <p className="text-sm font-semibold text-brand-primary">Create snag</p>
-            <form action={createSnag.bind(null, project.id)} className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
+            <form action={`/api/v1/projects/${project.id}/snags`} method="post" className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-4">
                 <label className="text-xs font-semibold text-brand-secondary">Title</label>
                 <Input className="mt-1" name="title" placeholder="Snag title..." />
@@ -378,4 +396,3 @@ export default async function SnagsPage(props: PageProps) {
     </div>
   );
 }
-

@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
+import { DownloadLink } from "@/components/app/download-link";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,17 +58,15 @@ export default async function ProjectCorrespondencePage(props: PageProps) {
         title="Correspondence"
         subtitle="Manual entries now, ready for future inbound email integration."
         actions={
-          <form className="flex items-center gap-2" action="">
-            <Input
-              className="w-56"
-              defaultValue={q}
-              name="q"
-              placeholder="Search subject, from, to..."
-            />
-            <Button type="submit" variant="secondary">
-              Search
-            </Button>
-          </form>
+          <div className="flex items-center gap-2">
+            <form className="flex items-center gap-2" action="">
+              <Input className="w-56" defaultValue={q} name="q" placeholder="Search subject, from, to..." />
+              <Button type="submit" variant="secondary">
+                Search
+              </Button>
+            </form>
+            <DownloadLink href={`/api/v1/projects/${project.id}/correspondence/export`} label="Export CSV" />
+          </div>
         }
       >
         {saved ? <p className="mb-2 text-sm font-semibold text-semantic-success">Saved.</p> : null}

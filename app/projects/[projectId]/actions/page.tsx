@@ -3,17 +3,19 @@ import { notFound } from "next/navigation";
 
 import { DataTableShell } from "@/components/app/data-table-shell";
 import { EmptyState } from "@/components/app/empty-state";
+import { DownloadLink } from "@/components/app/download-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { requirePermission } from "@/lib/auth/guards";
 import { requireUserId } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/rbac";
 
-import { createActionItem, deleteActionItem, updateActionItem } from "./actions";
+import { addActionComment, createActionItem, deleteActionItem, updateActionItem } from "./actions";
 
 type PageProps = { params: { projectId: string }; searchParams?: Record<string, string | string[] | undefined> };
 
@@ -35,6 +37,15 @@ function badgeToneFromValue(v: string | null | undefined) {
   return "neutral" as const;
 }
 
+function actionErrorMessage(code: string | undefined) {
+  if (!code) return null;
+  if (code === "forbidden") return "You don’t have permission to update action items.";
+  if (code === "comment_invalid") return "Comment is required.";
+  if (code === "comment_create_failed") return "Could not add comment. Please try again.";
+  if (code === "invalid") return "Invalid submission. Please check required fields.";
+  return `Error: ${code}`;
+}
+
 export default async function CriticalActionsPage(props: PageProps) {
   await requirePermission(PERMISSIONS.projectsRead);
   const userId = await requireUserId();
@@ -45,11 +56,17 @@ export default async function CriticalActionsPage(props: PageProps) {
 
   const saved = toString(props.searchParams?.saved) === "1";
   const error = toString(props.searchParams?.error);
+  const errorMessage = actionErrorMessage(error);
 
   const [items, statusType, priorityType, users] = await Promise.all([
     db.projectActionItem.findMany({
       where: { projectId: project.id },
-      include: { ownerUser: true, statusOption: true, priorityOption: true },
+      include: {
+        ownerUser: true,
+        statusOption: true,
+        priorityOption: true,
+        comments: { include: { user: true }, orderBy: { createdAt: "desc" } }
+      },
       orderBy: [{ requiredClosureDate: "asc" }, { createdAt: "desc" }]
     }),
     db.lookupType.findUnique({
@@ -81,10 +98,15 @@ export default async function CriticalActionsPage(props: PageProps) {
       <DataTableShell
         title="Critical Action Items"
         subtitle="Track priority actions with owners and closure dates. Built for future reminders/notifications."
-        actions={<Badge tone="neutral">{items.length} items</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge tone="neutral">{items.length} items</Badge>
+            <DownloadLink href={`/api/v1/projects/${project.id}/actions/export`} label="Export CSV" />
+          </div>
+        }
       >
         {saved ? <p className="mb-2 text-sm font-semibold text-semantic-success">Saved.</p> : null}
-        {error ? <p className="mb-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
+        {errorMessage ? <p className="mb-2 text-sm font-semibold text-semantic-danger">{errorMessage}</p> : null}
 
         {canEdit ? (
           <div className="dd-card p-4 mb-3">
@@ -253,6 +275,42 @@ export default async function CriticalActionsPage(props: PageProps) {
                                   <Button type="submit">Save</Button>
                                 </div>
                               </form>
+
+                              <div className="mt-3 border-t border-app-border pt-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-brand-primary">Progress updates</p>
+                                  <Badge tone="neutral">{it.comments.length}</Badge>
+                                </div>
+                                {it.comments.length ? (
+                                  <div className="mt-3 space-y-2">
+                                    {it.comments.map((c) => (
+                                      <div key={c.id} className="rounded-lg border border-app-border bg-white p-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                          <p className="text-xs font-semibold text-brand-secondary">
+                                            {c.user ? c.user.name ?? c.user.email : "—"}
+                                          </p>
+                                          <p className="text-xs text-brand-secondary">
+                                            {format(c.createdAt, "yyyy-MM-dd HH:mm")}
+                                          </p>
+                                        </div>
+                                        <p className="mt-2 text-sm text-brand-primary whitespace-pre-wrap">{c.comment}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="mt-2 text-xs text-brand-secondary">No updates yet.</p>
+                                )}
+
+                                <form action={addActionComment.bind(null, project.id, it.id)} className="mt-3 space-y-2">
+                                  <label className="text-xs font-semibold text-brand-secondary">Add update</label>
+                                  <Textarea className="min-h-[88px]" name="comment" placeholder="Add a timestamped update..." />
+                                  <div className="flex justify-end">
+                                    <Button type="submit" variant="secondary">
+                                      Post update
+                                    </Button>
+                                  </div>
+                                </form>
+                              </div>
                             </div>
                           </details>
 

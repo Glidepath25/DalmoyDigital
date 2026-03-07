@@ -59,6 +59,8 @@ model User {
 
   assignedInspectionItems SiteInspectionItem[] @relation("inspection_item_assigned_to")
 
+  actionComments ProjectActionComment[] @relation("action_comment_user")
+
   @@map("users")
 }
 
@@ -381,6 +383,7 @@ model ProjectActionItem {
   updatedBy   User?   @relation("action_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments ProjectActionComment[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -389,6 +392,23 @@ model ProjectActionItem {
   @@index([statusOptionId])
   @@index([priorityOptionId])
   @@map("project_action_items")
+}
+
+model ProjectActionComment {
+  id           String @id @default(uuid()) @db.Uuid @map("id")
+  actionItemId String @db.Uuid @map("action_item_id")
+  userId       String? @db.Uuid @map("user_id")
+
+  comment String @map("comment")
+
+  actionItem ProjectActionItem @relation(fields: [actionItemId], references: [id], onDelete: Cascade)
+  user       User?             @relation("action_comment_user", fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([actionItemId, createdAt])
+  @@map("project_action_comments")
 }
 
 model ProjectFinanceLine {
