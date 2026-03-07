@@ -20,7 +20,8 @@ export async function GET(_req: Request, ctx: RouteContext) {
 
   try {
     const { buffer } = await readLocalFile(file.storageKey);
-    return new Response(buffer, {
+    const body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    return new Response(body, {
       headers: {
         "Content-Type": file.mimeType ?? "application/octet-stream",
         "Content-Disposition": `inline; filename=\"${file.originalName.replace(/\"/g, "")}\"`
@@ -30,4 +31,3 @@ export async function GET(_req: Request, ctx: RouteContext) {
     return NextResponse.json({ error: "file_missing" }, { status: 404 });
   }
 }
-

@@ -379,7 +379,9 @@ export async function GET(_req: Request, ctx: RouteContext) {
     });
   });
 
-  return new Response(buffer, {
+  const body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+
+  return new Response(body, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename=\"${project.reference.replace(/\"/g, "")}_project_pack.pdf\"`,
