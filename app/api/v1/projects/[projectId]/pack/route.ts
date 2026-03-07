@@ -141,7 +141,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
     }),
     db.projectAttachment.findMany({
       where: { projectId: project.id },
-      include: { categoryOption: true, uploadedBy: true },
+      include: { file: true, categoryOption: true, uploadedBy: true },
       orderBy: [{ createdAt: "desc" }]
     }),
     db.siteInspectionReport.findMany({
@@ -321,7 +321,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
           { header: "Uploaded", width: 80 }
         ],
         attachments.slice(0, 20).map((a) => [
-          a.fileName,
+          a.file.originalName,
           a.categoryOption?.label ?? "",
           a.uploadedBy ? a.uploadedBy.name ?? a.uploadedBy.email : "",
           format(a.createdAt, "yyyy-MM-dd")
