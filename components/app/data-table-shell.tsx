@@ -10,10 +10,9 @@ export function DataTableShell(props: {
 }) {
   return (
     <SectionCard title={props.title} subtitle={props.subtitle} actions={props.actions}>
-      <div className="-mx-4 mt-2 overflow-x-auto">
-        <div className="min-w-[720px] px-4">{props.children}</div>
+      <div className="-mx-5 mt-2 overflow-x-auto">
+        <div className="min-w-[720px] px-5">{props.children}</div>
       </div>
     </SectionCard>
   );
 }
-

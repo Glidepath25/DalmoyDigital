@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { format } from "date-fns";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -49,8 +49,8 @@ export default async function NewProjectPage(props: PageProps) {
   return (
     <AppShell subtitle="Create a new fitout project workspace." title="New project">
       <div className="flex items-center justify-between gap-3">
-        <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/dashboard">
-          ← Back to dashboard
+        <Link className="dd-link" href="/dashboard">
+          <- Back to dashboard
         </Link>
       </div>
       {errorMessage ? <p className="mt-3 text-sm font-semibold text-semantic-danger">{errorMessage}</p> : null}
@@ -105,3 +105,4 @@ export default async function NewProjectPage(props: PageProps) {
     </AppShell>
   );
 }
+

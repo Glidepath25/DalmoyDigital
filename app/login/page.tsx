@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
+import { DalmoyLogo } from "@/components/brand/dalmoy-logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { dalmoyBrand } from "@/lib/brand/tokens";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,45 +45,58 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-app-bg flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <div className="p-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-brand-primary">
-            Dalmoy <span className="text-brand-secondary font-semibold">Digital</span>
-          </h1>
-          <p className="text-brand-secondary mt-1">Sign in to continue</p>
+    <main className="min-h-screen bg-app-bg">
+      <div className="mx-auto grid min-h-screen max-w-6xl grid-cols-1 lg:grid-cols-2">
+        <section className="hidden flex-col justify-between bg-brand-shell px-10 py-10 text-brand-foreground lg:flex">
+          <div>
+            <DalmoyLogo priority size="lg" surface="dark" />
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-brand-accent">Internal Platform</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight">Dalmoy Project Delivery</h1>
+            <p className="mt-3 max-w-md text-sm leading-6 text-brand-foreground/80">{dalmoyBrand.messaging.strapline}</p>
+          </div>
+          <p className="text-xs text-brand-foreground/65">Secure access for Dalmoy teams managing projects across Ireland.</p>
+        </section>
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-            <div>
-              <label className="text-sm font-semibold text-brand-secondary">Email</label>
-              <Input
-                autoComplete="email"
-                className="mt-1"
-                name="email"
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                type="email"
-                value={email}
-              />
+        <section className="flex items-center justify-center p-6 md:p-10">
+          <Card className="w-full max-w-md">
+            <div className="p-6">
+              <DalmoyLogo className="mb-4" size="md" surface="light" />
+              <h2 className="text-xl font-semibold tracking-tight text-brand-primary">Sign in</h2>
+              <p className="mt-1 text-sm text-brand-secondary">Access the Dalmoy internal delivery platform.</p>
+
+              <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+                <div>
+                  <label className="text-sm font-semibold text-brand-secondary">Email</label>
+                  <Input
+                    autoComplete="email"
+                    className="mt-1"
+                    name="email"
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    type="email"
+                    value={email}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-brand-secondary">Password</label>
+                  <Input
+                    autoComplete="current-password"
+                    className="mt-1"
+                    name="password"
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                    value={password}
+                  />
+                </div>
+                {error ? <p className="text-sm font-semibold text-semantic-danger">{error}</p> : null}
+                <Button className="w-full" disabled={loading} type="submit">
+                  {loading ? "Signing in..." : "Sign in"}
+                </Button>
+              </form>
             </div>
-            <div>
-              <label className="text-sm font-semibold text-brand-secondary">Password</label>
-              <Input
-                autoComplete="current-password"
-                className="mt-1"
-                name="password"
-                onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                value={password}
-              />
-            </div>
-            {error ? <p className="text-sm font-semibold text-semantic-danger">{error}</p> : null}
-            <Button className="w-full" disabled={loading} type="submit">
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </div>
-      </Card>
+          </Card>
+        </section>
+      </div>
     </main>
   );
 }

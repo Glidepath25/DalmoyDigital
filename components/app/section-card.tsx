@@ -9,10 +9,10 @@ export function SectionCard(props: {
   children: React.ReactNode;
 }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3">
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3 border-b border-app-border pb-3">
         <div>
-          <h2 className="text-sm font-semibold text-brand-primary">{props.title}</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-primary">{props.title}</h2>
           {props.subtitle ? <p className="mt-1 text-xs text-brand-secondary">{props.subtitle}</p> : null}
         </div>
         {props.actions ? <div className="flex items-center gap-2">{props.actions}</div> : null}
@@ -21,4 +21,3 @@ export function SectionCard(props: {
     </Card>
   );
 }
-

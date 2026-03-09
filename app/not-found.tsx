@@ -1,15 +1,17 @@
 import Link from "next/link";
 
+import { DalmoyLogo } from "@/components/brand/dalmoy-logo";
 import { Card } from "@/components/ui/card";
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <main className="min-h-screen bg-app-bg flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <div className="p-6">
-          <h1 className="text-xl font-semibold text-slate-900">Not found</h1>
-          <p className="text-slate-600 mt-1">The page you requested doesn’t exist.</p>
-          <Link className="mt-4 inline-block text-sm text-blue-700 hover:underline" href="/dashboard">
+          <DalmoyLogo className="mb-4" size="sm" surface="light" />
+          <h1 className="text-xl font-semibold text-brand-primary">Not found</h1>
+          <p className="mt-1 text-brand-secondary">The page you requested does not exist.</p>
+          <Link className="dd-link mt-4 inline-block" href="/dashboard">
             Back to dashboard
           </Link>
         </div>

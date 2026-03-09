@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import { AdminNav } from "@/components/app/admin-nav";
 import { AppShell } from "@/components/app/app-shell";
@@ -17,25 +17,25 @@ export default async function AdminHomePage() {
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionCard subtitle="Create projects and manage delivery." title="Projects">
-          <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/admin/projects">
-            Open project admin →
+          <Link className="dd-link" href="/admin/projects">
+            Open project admin ->
           </Link>
         </SectionCard>
         <SectionCard subtitle="Access levels and account security." title="Users & roles">
-          <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/admin/users">
-            Manage users →
+          <Link className="dd-link" href="/admin/users">
+            Manage users ->
           </Link>
         </SectionCard>
         <SectionCard subtitle="Dropdown values used throughout the platform." title="Lookups">
           <div className="space-y-2">
-            <Link className="block text-sm font-semibold text-brand-accent hover:underline" href="/admin/clients">
-              Clients →
+            <Link className="dd-link block" href="/admin/clients">
+              Clients ->
             </Link>
-            <Link className="block text-sm font-semibold text-brand-accent hover:underline" href="/admin/statuses">
-              Project statuses →
+            <Link className="dd-link block" href="/admin/statuses">
+              Project statuses ->
             </Link>
-            <Link className="block text-sm font-semibold text-brand-accent hover:underline" href="/admin/lookups">
-              Generic lookup types/options →
+            <Link className="dd-link block" href="/admin/lookups">
+              Generic lookup types/options ->
             </Link>
           </div>
         </SectionCard>
@@ -43,3 +43,4 @@ export default async function AdminHomePage() {
     </AppShell>
   );
 }
+

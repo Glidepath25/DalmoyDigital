@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type React from "react";
 
+import { MainNav } from "@/components/app/main-nav";
 import { SignOutButton } from "@/components/app/signout-button";
 import { PageHeader } from "@/components/app/page-header";
+import { DalmoyLogo } from "@/components/brand/dalmoy-logo";
 import { requireSession } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/rbac";
@@ -19,26 +21,16 @@ export async function AppShell(props: {
 
   return (
     <div className="min-h-screen bg-app-bg">
-      <header className="border-b border-app-border bg-white">
-        <div className="max-w-7xl mx-auto px-5 md:px-8 py-4 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 border-b border-brand-shellElevated bg-brand-shell text-brand-foreground shadow-[0_6px_24px_rgba(0,0,0,0.22)]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 md:px-8">
           <div className="flex items-center gap-4">
-            <Link className="font-semibold tracking-tight text-brand-primary" href="/dashboard">
-              <span className="text-base">Dalmoy</span>{" "}
-              <span className="text-base text-brand-secondary font-semibold">Digital</span>
+            <Link className="inline-flex items-center" href="/dashboard">
+              <DalmoyLogo size="sm" surface="dark" />
             </Link>
-            <nav className="flex items-center gap-2 text-sm text-brand-secondary">
-              <Link className="rounded-md px-2.5 py-1.5 hover:bg-app-bg hover:text-brand-primary" href="/dashboard">
-                Dashboard
-              </Link>
-              {canAdmin ? (
-                <Link className="rounded-md px-2.5 py-1.5 hover:bg-app-bg hover:text-brand-primary" href="/admin">
-                  Admin
-                </Link>
-              ) : null}
-            </nav>
+            <MainNav canAdmin={canAdmin} />
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-brand-secondary hidden sm:block">{session.user.email}</span>
+            <span className="hidden text-sm text-brand-foreground/80 sm:block">{session.user.email}</span>
             <SignOutButton />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/app/app-shell";
+﻿import { AppShell } from "@/components/app/app-shell";
 import { AdminNav } from "@/components/app/admin-nav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,7 +33,7 @@ export default async function AdminUsersPage(props: PageProps) {
   const roleMap = new Map(roles.map((r) => [r.id, r]));
 
   return (
-    <AppShell title="Admin • Users">
+    <AppShell title="Admin | Users">
       <AdminNav active="users" />
       {saved ? <p className="mt-4 text-sm font-semibold text-semantic-success">Saved.</p> : null}
       {error ? <p className="mt-2 text-sm font-semibold text-semantic-danger">Error: {error}</p> : null}
@@ -77,40 +77,40 @@ export default async function AdminUsersPage(props: PageProps) {
             <Card className="p-4" key={u.id}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-medium text-slate-900">{u.email}</p>
-                  <p className="text-xs text-slate-600 mt-1">
+                  <p className="font-medium text-brand-primary">{u.email}</p>
+                  <p className="text-xs text-brand-secondary mt-1">
                     Roles:{" "}
                     {u.roles.length
                       ? u.roles
                           .map((ur) => roleMap.get(ur.roleId)?.name ?? ur.role.key)
                           .sort()
                           .join(", ")
-                      : "—"}
+                      : "-"}
                   </p>
                 </div>
-                <div className="text-xs text-slate-600">{u.isActive ? "Active" : "Disabled"}</div>
+                <div className="text-xs text-brand-secondary">{u.isActive ? "Active" : "Disabled"}</div>
               </div>
 
               <form action={updateUser.bind(null, u.id)} className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3">
                 <div className="md:col-span-4">
-                  <label className="text-xs font-medium text-slate-700">Name</label>
+                  <label className="text-xs font-medium text-brand-secondary">Name</label>
                   <Input className="mt-1" defaultValue={u.name ?? ""} name="name" placeholder="Full name" />
                 </div>
                 <div className="md:col-span-3">
-                  <label className="text-xs font-medium text-slate-700">New password (optional)</label>
+                  <label className="text-xs font-medium text-brand-secondary">New password (optional)</label>
                   <Input className="mt-1" name="password" type="password" />
                 </div>
                 <div className="md:col-span-3 flex items-end">
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <label className="flex items-center gap-2 text-sm text-brand-secondary">
                     <input defaultChecked={u.isActive} name="isActive" type="checkbox" value="true" />
                     Active
                   </label>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="text-xs font-medium text-slate-700">Role(s)</label>
+                  <label className="text-xs font-medium text-brand-secondary">Role(s)</label>
                   <div className="mt-2 space-y-1">
                     {roles.map((r) => (
-                      <label className="flex items-center gap-2 text-xs text-slate-700" key={r.id}>
+                      <label className="flex items-center gap-2 text-xs text-brand-secondary" key={r.id}>
                         <input defaultChecked={assignedRoleIds.has(r.id)} name="roleIds" type="checkbox" value={r.id} />
                         {r.name}
                       </label>
@@ -127,8 +127,9 @@ export default async function AdminUsersPage(props: PageProps) {
           );
         })}
 
-        {users.length === 0 ? <p className="text-sm text-slate-600">No users yet.</p> : null}
+        {users.length === 0 ? <p className="text-sm text-brand-secondary">No users yet.</p> : null}
       </div>
     </AppShell>
   );
 }
+

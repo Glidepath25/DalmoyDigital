@@ -2,20 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --dalmoy-shell: #131516;
+  --dalmoy-shell-elevated: #1b1d1f;
+  --dalmoy-accent: #ef4d23;
+  --dalmoy-accent-hover: #d9441e;
+  --dalmoy-page-bg: #f3f4f5;
+  --dalmoy-surface: #ffffff;
+  --dalmoy-border: #d7d9dc;
+  --dalmoy-ink: #17191b;
+  --dalmoy-ink-muted: #5d6268;
+  --dalmoy-foreground-on-shell: #f7f8f8;
+}
+
 @layer base {
   html {
     font-family: var(--font-sans), system-ui, sans-serif;
-    background: theme(colors.app.bg);
+    background: var(--dalmoy-page-bg);
   }
 
   body {
     min-height: 100%;
-    background: theme(colors.app.bg);
-    color: theme(colors.brand.primary);
+    background: radial-gradient(circle at top left, #ffffff 0, var(--dalmoy-page-bg) 55%);
+    color: var(--dalmoy-ink);
   }
 
   ::selection {
-    background: rgba(76, 106, 138, 0.25);
+    background: color-mix(in srgb, var(--dalmoy-accent) 28%, transparent);
   }
 }
 
@@ -26,6 +39,30 @@ body {
 
 @layer components {
   .dd-card {
-    @apply rounded-xl border border-app-border bg-app-surface shadow-card;
+    @apply rounded-2xl border border-app-border/95 bg-app-surface shadow-card;
+  }
+
+  .dd-subtle-card {
+    @apply rounded-2xl border border-app-border/90 bg-app-muted;
+  }
+
+  .dd-link {
+    @apply text-sm font-semibold text-brand-accent transition-colors hover:text-brand-accentHover hover:underline underline-offset-4;
+  }
+
+  .dd-table {
+    @apply w-full text-sm;
+  }
+
+  .dd-table thead {
+    @apply bg-app-muted;
+  }
+
+  .dd-table thead tr {
+    @apply text-left text-xs font-semibold uppercase tracking-wide text-brand-secondary;
+  }
+
+  .dd-table tbody tr {
+    @apply border-t border-app-border transition-colors hover:bg-brand-accent/5;
   }
 }

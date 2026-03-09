@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
@@ -63,8 +63,8 @@ export default async function InspectionsPage(props: PageProps) {
           />
         ) : (
           <div className="dd-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-app-bg">
+            <table className="dd-table">
+              <thead>
                 <tr className="text-left text-xs font-semibold text-brand-secondary">
                   <th className="px-3 py-2">Inspection date</th>
                   <th className="px-3 py-2">Completed by</th>
@@ -78,7 +78,7 @@ export default async function InspectionsPage(props: PageProps) {
                 {reports.map((r) => (
                   <tr key={r.id} className="border-t border-app-border hover:bg-app-bg/50">
                     <td className="px-3 py-2 font-semibold text-brand-primary">{format(r.inspectionDate, "yyyy-MM-dd HH:mm")}</td>
-                    <td className="px-3 py-2">{r.completedByUser ? r.completedByUser.name ?? r.completedByUser.email : "—"}</td>
+                    <td className="px-3 py-2">{r.completedByUser ? r.completedByUser.name ?? r.completedByUser.email : "-"}</td>
                     <td className="px-3 py-2">{r.projectReferenceSnapshot}</td>
                     <td className="px-3 py-2">
                       <Badge tone="neutral">{r.items.length}</Badge>
@@ -89,7 +89,7 @@ export default async function InspectionsPage(props: PageProps) {
                       </Badge>
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <Link className="text-sm font-semibold text-brand-accent hover:underline" href={`/projects/${project.id}/inspections/${r.id}`}>
+                      <Link className="dd-link" href={`/projects/${project.id}/inspections/${r.id}`}>
                         Open
                       </Link>
                     </td>
@@ -103,3 +103,6 @@ export default async function InspectionsPage(props: PageProps) {
     </div>
   );
 }
+
+
+

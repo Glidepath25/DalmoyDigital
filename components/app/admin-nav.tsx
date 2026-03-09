@@ -14,7 +14,7 @@ export type AdminNavKey = (typeof items)[number]["key"];
 
 export function AdminNav(props: { active: AdminNavKey }) {
   return (
-    <div className="dd-card p-2 overflow-x-auto">
+    <div className="dd-card overflow-x-auto p-2">
       <nav className="flex items-center gap-1 min-w-max">
         {items.map((it) => {
           const active = it.key === props.active;
@@ -23,8 +23,8 @@ export function AdminNav(props: { active: AdminNavKey }) {
               className={clsx(
                 "rounded-md px-3 py-2 text-sm font-semibold transition-colors",
                 active
-                  ? "bg-brand-primary text-white"
-                  : "text-brand-secondary hover:bg-app-bg hover:text-brand-primary"
+                  ? "bg-brand-shell text-white ring-1 ring-brand-accent/55"
+                  : "text-brand-secondary hover:bg-brand-accent/10 hover:text-brand-primary"
               )}
               href={it.href}
               key={it.key}
@@ -37,4 +37,3 @@ export function AdminNav(props: { active: AdminNavKey }) {
     </div>
   );
 }
-

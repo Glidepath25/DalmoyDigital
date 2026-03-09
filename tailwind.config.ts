@@ -1,4 +1,7 @@
 import type { Config } from "tailwindcss";
+import { dalmoyBrand } from "./lib/brand/tokens";
+
+const c = dalmoyBrand.colors;
 
 export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -6,19 +9,25 @@ export default {
     extend: {
       colors: {
         brand: {
-          primary: "#0F1C2E",
-          secondary: "#2F3B4C",
-          accent: "#4C6A8A"
+          shell: c.shell,
+          shellElevated: c.shellElevated,
+          foreground: c.foregroundOnShell,
+          primary: c.ink,
+          secondary: c.inkMuted,
+          accent: c.accent,
+          accentHover: c.accentHover,
+          accentSoft: c.accentSoft
         },
         app: {
-          bg: "#F5F6F7",
-          surface: "#FFFFFF",
-          border: "#D7D9DD"
+          bg: c.pageBg,
+          surface: c.surface,
+          muted: c.mutedSurface,
+          border: c.border
         },
         semantic: {
-          success: "#2E7D32",
-          warning: "#F9A825",
-          danger: "#C62828"
+          success: c.success,
+          warning: c.warning,
+          danger: c.danger
         }
       },
       fontFamily: {
@@ -28,7 +37,7 @@ export default {
         xl: "14px"
       },
       boxShadow: {
-        card: "0 1px 2px rgba(15,28,46,0.06), 0 6px 18px rgba(15,28,46,0.06)"
+        card: "0 1px 2px rgba(15,17,19,0.06), 0 12px 28px rgba(15,17,19,0.08)"
       }
     }
   },

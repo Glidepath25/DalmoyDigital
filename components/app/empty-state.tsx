@@ -14,11 +14,10 @@ export function EmptyState(props: {
       <p className="text-sm font-semibold text-brand-primary">{props.title}</p>
       {props.description ? <p className="mt-2 text-sm text-brand-secondary">{props.description}</p> : null}
       {props.actionHref && props.actionLabel ? (
-        <Link className="mt-4 inline-flex text-sm font-semibold text-brand-accent hover:underline" href={props.actionHref}>
+        <Link className="dd-link mt-4 inline-flex" href={props.actionHref}>
           {props.actionLabel}
         </Link>
       ) : null}
     </Card>
   );
 }
-

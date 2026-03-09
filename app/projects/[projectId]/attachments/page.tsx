@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
@@ -23,7 +23,7 @@ function toString(v: string | string[] | undefined) {
 }
 
 function formatBytes(n: number | null | undefined) {
-  if (!n || n <= 0) return "—";
+  if (!n || n <= 0) return "-";
   const kb = n / 1024;
   if (kb < 1024) return `${kb.toFixed(1)} KB`;
   const mb = kb / 1024;
@@ -81,7 +81,7 @@ export default async function AttachmentsPage(props: PageProps) {
               <div className="md:col-span-4">
                 <label className="text-xs font-semibold text-brand-secondary">Category</label>
                 <Select className="mt-1" name="categoryOptionId">
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {categoryOptions.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.label}
@@ -97,15 +97,15 @@ export default async function AttachmentsPage(props: PageProps) {
             </form>
           </div>
         ) : (
-          <p className="mb-3 text-xs text-brand-secondary">You don’t have permission to upload attachments.</p>
+          <p className="mb-3 text-xs text-brand-secondary">You don't have permission to upload attachments.</p>
         )}
 
         {attachments.length === 0 ? (
           <EmptyState title="No attachments yet" description="Upload drawings, RFIs, photos, and handover documents." />
         ) : (
           <div className="dd-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-app-bg">
+            <table className="dd-table">
+              <thead>
                 <tr className="text-left text-xs font-semibold text-brand-secondary">
                   <th className="px-3 py-2">File name</th>
                   <th className="px-3 py-2">Category</th>
@@ -120,15 +120,15 @@ export default async function AttachmentsPage(props: PageProps) {
                   <tr key={a.id} className="border-t border-app-border hover:bg-app-bg/50">
                     <td className="px-3 py-2">
                       <p className="font-semibold text-brand-primary">{a.file.originalName}</p>
-                      <p className="text-xs text-brand-secondary">{a.file.mimeType ?? "—"}</p>
+                      <p className="text-xs text-brand-secondary">{a.file.mimeType ?? "-"}</p>
                     </td>
-                    <td className="px-3 py-2">{a.categoryOption ? <Badge tone="neutral">{a.categoryOption.label}</Badge> : "—"}</td>
-                    <td className="px-3 py-2">{a.uploadedBy ? a.uploadedBy.name ?? a.uploadedBy.email : "—"}</td>
+                    <td className="px-3 py-2">{a.categoryOption ? <Badge tone="neutral">{a.categoryOption.label}</Badge> : "-"}</td>
+                    <td className="px-3 py-2">{a.uploadedBy ? a.uploadedBy.name ?? a.uploadedBy.email : "-"}</td>
                     <td className="px-3 py-2">{format(a.createdAt, "yyyy-MM-dd HH:mm")}</td>
                     <td className="px-3 py-2">{formatBytes(a.file.sizeBytes)}</td>
                     <td className="px-3 py-2 text-right">
                       <Link
-                        className="text-sm font-semibold text-brand-accent hover:underline"
+                        className="dd-link"
                         href={`/api/v1/attachments/${a.id}/download`}
                       >
                         Download
@@ -144,3 +144,6 @@ export default async function AttachmentsPage(props: PageProps) {
     </div>
   );
 }
+
+
+

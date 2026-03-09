@@ -19,4 +19,3 @@ export function PlaceholderModuleCard(props: { title: string; description: strin
     </Card>
   );
 }
-

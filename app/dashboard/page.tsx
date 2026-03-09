@@ -1,8 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Prisma } from "@prisma/client";
 import { endOfWeek, format, startOfWeek } from "date-fns";
 
 import { AppShell } from "@/components/app/app-shell";
+import { DalmoyLogo } from "@/components/brand/dalmoy-logo";
 import { EmptyState } from "@/components/app/empty-state";
 import { FilterPanel } from "@/components/app/filter-panel";
 import { SectionCard } from "@/components/app/section-card";
@@ -16,6 +17,7 @@ import { requirePermission } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/rbac";
+import { dalmoyBrand } from "@/lib/brand/tokens";
 
 type PageProps = {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -168,7 +170,7 @@ export default async function DashboardPage(props: PageProps) {
 
   const primaryAction = canCreate ? (
     <Link
-      className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-4 py-2 bg-brand-primary text-white hover:bg-brand-secondary border border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-accent/30 focus:ring-offset-2 focus:ring-offset-app-bg transition-colors"
+      className="inline-flex items-center justify-center rounded-lg border border-brand-accent bg-brand-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-brand-accentHover hover:bg-brand-accentHover focus:outline-none focus:ring-2 focus:ring-brand-accent/40 focus:ring-offset-2 focus:ring-offset-app-bg"
       href="/projects/new"
     >
       New project
@@ -181,10 +183,20 @@ export default async function DashboardPage(props: PageProps) {
       subtitle="Track fitout projects from costing through to handover."
       title="Projects"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <SectionCard
+        title="Operating System"
+        subtitle="Built for Dalmoy teams managing commercial fit-out and construction delivery."
+      >
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <DalmoyLogo size="md" surface="light" />
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brand-secondary">{dalmoyBrand.messaging.strapline}</p>
+        </div>
+      </SectionCard>
+
+      <div className="grid grid-cols-1 gap-3 pt-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total projects" value={totalAll} />
         <StatCard label="In progress" value={inProgressAll} />
-        <StatCard label="Due this week" hint={`${format(weekStart, "MMM d")}–${format(weekEnd, "MMM d")}`} value={dueThisWeekAll} />
+        <StatCard label="Due this week" hint={`${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d")}`} value={dueThisWeekAll} />
         <StatCard label="Completed" value={completedAll} />
       </div>
 
@@ -227,11 +239,11 @@ export default async function DashboardPage(props: PageProps) {
                           <div>
                             <p className="text-sm font-semibold text-brand-primary">{a.title}</p>
                             <p className="mt-1 text-xs text-brand-secondary">
-                              {a.project.reference} • {a.project.name}
+                              {a.project.reference} | {a.project.name}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <Badge tone="neutral">{a.statusOption?.label ?? "Status —"}</Badge>
-                              <Badge tone="neutral">{a.priorityOption?.label ?? "Priority —"}</Badge>
+                              <Badge tone="neutral">{a.statusOption?.label ?? "Status -"}</Badge>
+                              <Badge tone="neutral">{a.priorityOption?.label ?? "Priority -"}</Badge>
                               {a.requiredClosureDate ? (
                                 <Badge tone={overdue ? "danger" : "neutral"}>
                                   Due {format(a.requiredClosureDate, "MMM d")}
@@ -271,11 +283,11 @@ export default async function DashboardPage(props: PageProps) {
                           <div>
                             <p className="text-sm font-semibold text-brand-primary">{s.title}</p>
                             <p className="mt-1 text-xs text-brand-secondary">
-                              {s.project.reference} • {s.project.name}
+                              {s.project.reference} | {s.project.name}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <Badge tone="neutral">{s.statusOption?.label ?? "Status —"}</Badge>
-                              <Badge tone="neutral">{s.priorityOption?.label ?? "Priority —"}</Badge>
+                              <Badge tone="neutral">{s.statusOption?.label ?? "Status -"}</Badge>
+                              <Badge tone="neutral">{s.priorityOption?.label ?? "Priority -"}</Badge>
                               {s.targetClosureDate ? (
                                 <Badge tone={overdue ? "danger" : "neutral"}>
                                   Target {format(s.targetClosureDate, "MMM d")}
@@ -346,7 +358,7 @@ export default async function DashboardPage(props: PageProps) {
             </div>
             <div className="md:col-span-12 flex items-center gap-2">
               <Button type="submit">Apply filters</Button>
-              <Link className="text-sm font-semibold text-brand-accent hover:underline" href="/dashboard">
+              <Link className="dd-link" href="/dashboard">
                 Clear
               </Link>
               <span className="ml-auto text-xs text-brand-secondary">
@@ -365,27 +377,27 @@ export default async function DashboardPage(props: PageProps) {
           <div className="flex items-center gap-2">
             {prevHref ? (
               <Link
-                className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-primary border border-app-border hover:bg-app-bg"
+                className="inline-flex items-center justify-center rounded-lg border border-brand-primary bg-brand-primary px-3 py-1.5 text-sm font-semibold text-white hover:bg-black"
                 href={prevHref}
                 prefetch={false}
               >
                 Previous
               </Link>
             ) : (
-              <span className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-secondary/50 border border-app-border cursor-not-allowed">
+              <span className="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-app-border bg-app-muted px-3 py-1.5 text-sm font-semibold text-brand-secondary/60">
                 Previous
               </span>
             )}
             {nextHref ? (
               <Link
-                className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-primary border border-app-border hover:bg-app-bg"
+                className="inline-flex items-center justify-center rounded-lg border border-brand-primary bg-brand-primary px-3 py-1.5 text-sm font-semibold text-white hover:bg-black"
                 href={nextHref}
                 prefetch={false}
               >
                 Next
               </Link>
             ) : (
-              <span className="inline-flex items-center justify-center rounded-md text-sm font-semibold px-3 py-1.5 bg-white text-brand-secondary/50 border border-app-border cursor-not-allowed">
+              <span className="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-app-border bg-app-muted px-3 py-1.5 text-sm font-semibold text-brand-secondary/60">
                 Next
               </span>
             )}
@@ -403,8 +415,8 @@ export default async function DashboardPage(props: PageProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-app-bg text-brand-secondary">
+            <table className="dd-table min-w-full">
+              <thead>
                 <tr>
                   <th className="text-left font-semibold px-4 py-3">Project</th>
                   <th className="text-left font-semibold px-4 py-3">Client</th>
@@ -484,3 +496,7 @@ export default async function DashboardPage(props: PageProps) {
     </AppShell>
   );
 }
+
+
+
+

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { dalmoyBrand } from "@/lib/brand/tokens";
 
 type TimelineMilestone = {
   id: string;
@@ -16,10 +17,10 @@ type TimelineMilestone = {
 
 function ragColor(value: string | null | undefined) {
   const v = (value ?? "").toLowerCase();
-  if (v.includes("green")) return "#2E7D32";
-  if (v.includes("amber") || v.includes("yellow")) return "#F9A825";
-  if (v.includes("red")) return "#C62828";
-  return "#4C6A8A";
+  if (v.includes("green")) return dalmoyBrand.colors.ragGreen;
+  if (v.includes("amber") || v.includes("yellow")) return dalmoyBrand.colors.ragAmber;
+  if (v.includes("red")) return dalmoyBrand.colors.ragRed;
+  return dalmoyBrand.colors.accent;
 }
 
 function fmtDate(d: Date) {
@@ -146,18 +147,18 @@ export function ProgrammeTimeline(props: { milestones: TimelineMilestone[] }) {
           role="img"
           aria-label="Programme timeline"
         >
-          <rect x={0} y={0} width={width} height={height} fill="#FFFFFF" rx={12} />
-          <rect x={0} y={0} width={width} height={headerHeight} fill="#F5F6F7" rx={12} />
+          <rect x={0} y={0} width={width} height={height} fill={dalmoyBrand.colors.surface} rx={12} />
+          <rect x={0} y={0} width={width} height={headerHeight} fill={dalmoyBrand.colors.mutedSurface} rx={12} />
 
-          <text x={16} y={28} fontSize={12} fontWeight={700} fill="#2F3B4C">
+          <text x={16} y={28} fontSize={12} fontWeight={700} fill={dalmoyBrand.colors.inkMuted}>
             Milestone
           </text>
-          <text x={leftLabelWidth} y={28} fontSize={12} fontWeight={700} fill="#2F3B4C">
+          <text x={leftLabelWidth} y={28} fontSize={12} fontWeight={700} fill={dalmoyBrand.colors.inkMuted}>
             Timeline
           </text>
 
           {weekLines.map((x) => (
-            <line key={x} x1={x} y1={headerHeight} x2={x} y2={height - 10} stroke="#D7D9DD" strokeWidth={1} />
+            <line key={x} x1={x} y1={headerHeight} x2={x} y2={height - 10} stroke={dalmoyBrand.colors.border} strokeWidth={1} />
           ))}
 
           <line
@@ -165,14 +166,14 @@ export function ProgrammeTimeline(props: { milestones: TimelineMilestone[] }) {
             y1={headerHeight}
             x2={leftLabelWidth}
             y2={height - 10}
-            stroke="#D7D9DD"
+            stroke={dalmoyBrand.colors.border}
             strokeWidth={1}
           />
 
-          <text x={leftLabelWidth} y={40} fontSize={10} fill="#2F3B4C">
+          <text x={leftLabelWidth} y={40} fontSize={10} fill={dalmoyBrand.colors.inkMuted}>
             {fmtDate(min)}
           </text>
-          <text x={width - rightPad} y={40} fontSize={10} fill="#2F3B4C" textAnchor="end">
+          <text x={width - rightPad} y={40} fontSize={10} fill={dalmoyBrand.colors.inkMuted} textAnchor="end">
             {fmtDate(max)}
           </text>
 
@@ -185,8 +186,8 @@ export function ProgrammeTimeline(props: { milestones: TimelineMilestone[] }) {
             const color = ragColor(m.ragValue ?? m.ragLabel);
             return (
               <g key={m.id}>
-                <line x1={0} y1={y + rowHeight - 6} x2={width} y2={y + rowHeight - 6} stroke="#F5F6F7" />
-                <text x={16} y={y + 14} fontSize={11} fontWeight={600} fill="#0F1C2E">
+                <line x1={0} y1={y + rowHeight - 6} x2={width} y2={y + rowHeight - 6} stroke={dalmoyBrand.colors.mutedSurface} />
+                <text x={16} y={y + 14} fontSize={11} fontWeight={600} fill={dalmoyBrand.colors.ink}>
                   {m.name}
                 </text>
                 <rect x={x1} y={barY} width={barW} height={14} rx={7} fill={color} opacity={0.95} />
@@ -198,4 +199,3 @@ export function ProgrammeTimeline(props: { milestones: TimelineMilestone[] }) {
     </div>
   );
 }
-

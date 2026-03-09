@@ -180,3 +180,9 @@ This Phase 1 foundation is designed so you can add:
 - site progress/snags (use `lookup_types/options` for dynamic fields)
 - notifications (add `notifications` + background jobs)
 - activity history (add an `activity_events` table that writes on updates)
+
+## Branding assets
+- Dalmoy logo files are stored in public/brand/:
+  - dalmoy-logo-secondary.png (used in dark headers and PDF banner)
+  - dalmoy-logo-primary.png (available for light-surface usage)
+- Central brand tokens are defined in lib/brand/tokens.ts.

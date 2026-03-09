@@ -20,7 +20,7 @@ export function ProjectTabsNav(props: { projectId: string }) {
   const pathname = usePathname();
 
   return (
-    <div className="dd-card px-2 py-2 overflow-x-auto">
+    <div className="dd-card overflow-x-auto px-2 py-2">
       <div className="flex items-center gap-1 min-w-max">
         {TABS.map((t) => {
           const href = t.path(props.projectId);
@@ -36,8 +36,8 @@ export function ProjectTabsNav(props: { projectId: string }) {
               className={clsx(
                 "px-3 py-2 rounded-lg text-sm font-semibold transition-colors",
                 active
-                  ? "bg-brand-primary text-white"
-                  : "text-brand-secondary hover:text-brand-primary hover:bg-app-border/40"
+                  ? "bg-brand-shell text-white shadow-sm ring-1 ring-brand-accent/55"
+                  : "text-brand-secondary hover:bg-brand-accent/10 hover:text-brand-primary"
               )}
             >
               {t.label}

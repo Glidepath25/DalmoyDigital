@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
@@ -47,7 +47,7 @@ function snagErrorMessage(code: string | undefined) {
   if (code === "invalid_priority") return "Invalid priority selected.";
   if (code === "invalid_responsible") return "Invalid responsible party selected.";
   if (code === "invalid_target_date") return "Invalid target closure date.";
-  if (code === "forbidden") return "You don’t have permission to create or update snags.";
+  if (code === "forbidden") return "You don't have permission to create or update snags.";
   if (code === "create_failed") return "Create failed. Please try again.";
   if (code === "update_failed") return "Update failed. Please try again.";
   if (code === "upload_failed") return "Upload failed. Please try again.";
@@ -122,8 +122,8 @@ export default async function SnagsPage(props: PageProps) {
           <div className="flex items-center gap-2">
             <Badge tone="neutral">{snags.length} snags</Badge>
             <DownloadLink href={`/api/v1/projects/${project.id}/snags/export`} label="Export CSV" />
-            <Link className="text-sm font-semibold text-brand-accent hover:underline" href={`/projects/${project.id}/inspections`}>
-              Raise via inspection →
+            <Link className="dd-link" href={`/projects/${project.id}/inspections`}>
+              Raise via inspection ->
             </Link>
           </div>
         }
@@ -193,7 +193,7 @@ export default async function SnagsPage(props: PageProps) {
               <div className="md:col-span-3">
                 <label className="text-xs font-semibold text-brand-secondary">Status</label>
                 <Select className="mt-1" name="statusOptionId">
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {statusOptions.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.label}
@@ -204,7 +204,7 @@ export default async function SnagsPage(props: PageProps) {
               <div className="md:col-span-3">
                 <label className="text-xs font-semibold text-brand-secondary">Priority</label>
                 <Select className="mt-1" name="priorityOptionId">
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {priorityOptions.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.label}
@@ -219,7 +219,7 @@ export default async function SnagsPage(props: PageProps) {
               <div className="md:col-span-4">
                 <label className="text-xs font-semibold text-brand-secondary">Responsible party</label>
                 <Select className="mt-1" name="responsibleUserId">
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name ? `${u.name} (${u.email})` : u.email}
@@ -239,15 +239,15 @@ export default async function SnagsPage(props: PageProps) {
             </form>
           </div>
         ) : (
-          <p className="mb-3 text-xs text-brand-secondary">You don’t have permission to create snags.</p>
+          <p className="mb-3 text-xs text-brand-secondary">You don't have permission to create snags.</p>
         )}
 
         {snags.length === 0 ? (
           <EmptyState title="No snags yet" description="Raise snags during a site inspection or create one manually." />
         ) : (
           <div className="dd-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-app-bg">
+            <table className="dd-table">
+              <thead>
                 <tr className="text-left text-xs font-semibold text-brand-secondary">
                   <th className="px-3 py-2">Title</th>
                   <th className="px-3 py-2">Status</th>
@@ -273,19 +273,19 @@ export default async function SnagsPage(props: PageProps) {
                         {s.statusOption ? (
                           <Badge tone={badgeToneFromValue(s.statusOption.value)}>{s.statusOption.label}</Badge>
                         ) : (
-                          <Badge tone="neutral">—</Badge>
+                          <Badge tone="neutral">-</Badge>
                         )}
                       </td>
                       <td className="px-3 py-2">
                         {s.priorityOption ? (
                           <Badge tone={badgeToneFromValue(s.priorityOption.value)}>{s.priorityOption.label}</Badge>
                         ) : (
-                          <Badge tone="neutral">—</Badge>
+                          <Badge tone="neutral">-</Badge>
                         )}
                       </td>
-                      <td className="px-3 py-2">{s.responsibleUser ? s.responsibleUser.name ?? s.responsibleUser.email : "—"}</td>
+                      <td className="px-3 py-2">{s.responsibleUser ? s.responsibleUser.name ?? s.responsibleUser.email : "-"}</td>
                       <td className="px-3 py-2">{format(s.dateRaised, "yyyy-MM-dd")}</td>
-                      <td className="px-3 py-2">{s.targetClosureDate ? format(s.targetClosureDate, "yyyy-MM-dd") : "—"}</td>
+                      <td className="px-3 py-2">{s.targetClosureDate ? format(s.targetClosureDate, "yyyy-MM-dd") : "-"}</td>
                       <td className="px-3 py-2">
                         <Badge tone="neutral">{s.attachments.length}</Badge>
                       </td>
@@ -308,7 +308,7 @@ export default async function SnagsPage(props: PageProps) {
                                 <div>
                                   <label className="text-xs font-semibold text-brand-secondary">Status</label>
                                   <Select className="mt-1" defaultValue={s.statusOptionId ?? ""} name="statusOptionId">
-                                    <option value="">—</option>
+                                    <option value="">-</option>
                                     {statusOptions.map((o) => (
                                       <option key={o.id} value={o.id}>
                                         {o.label}
@@ -319,7 +319,7 @@ export default async function SnagsPage(props: PageProps) {
                                 <div>
                                   <label className="text-xs font-semibold text-brand-secondary">Priority</label>
                                   <Select className="mt-1" defaultValue={s.priorityOptionId ?? ""} name="priorityOptionId">
-                                    <option value="">—</option>
+                                    <option value="">-</option>
                                     {priorityOptions.map((o) => (
                                       <option key={o.id} value={o.id}>
                                         {o.label}
@@ -330,7 +330,7 @@ export default async function SnagsPage(props: PageProps) {
                                 <div>
                                   <label className="text-xs font-semibold text-brand-secondary">Responsible party</label>
                                   <Select className="mt-1" defaultValue={s.responsibleUserId ?? ""} name="responsibleUserId">
-                                    <option value="">—</option>
+                                    <option value="">-</option>
                                     {users.map((u) => (
                                       <option key={u.id} value={u.id}>
                                         {u.name ? `${u.name} (${u.email})` : u.email}
@@ -382,7 +382,7 @@ export default async function SnagsPage(props: PageProps) {
                             </div>
                           </details>
                         ) : (
-                          <span className="text-xs text-brand-secondary">—</span>
+                          <span className="text-xs text-brand-secondary">-</span>
                         )}
                       </td>
                     </tr>
@@ -396,3 +396,6 @@ export default async function SnagsPage(props: PageProps) {
     </div>
   );
 }
+
+
+

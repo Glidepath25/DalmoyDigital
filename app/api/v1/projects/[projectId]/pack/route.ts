@@ -6,6 +6,7 @@ import PDFDocument from "pdfkit";
 import { format } from "date-fns";
 
 import { requireApiPermission } from "@/lib/api/auth";
+import { dalmoyBrand } from "@/lib/brand/tokens";
 import { db } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -17,17 +18,19 @@ type Column = { header: string; width: number };
 
 const PACK_FONT_REGULAR = "PackSans";
 const PACK_FONT_BOLD = "PackSans-Bold";
+const PACK_BRAND = dalmoyBrand.colors;
 
-function resolvePackFontPaths() {
+function resolvePackAssetPaths() {
   const root = process.cwd();
   return {
     regular: join(root, "public", "fonts", "Lato-Regular.ttf"),
-    bold: join(root, "public", "fonts", "Lato-Bold.ttf")
+    bold: join(root, "public", "fonts", "Lato-Bold.ttf"),
+    logo: join(root, "public", "brand", "dalmoy-logo-secondary.png")
   };
 }
 
 function registerPackFonts(doc: PDFKit.PDFDocument) {
-  const fontPaths = resolvePackFontPaths();
+  const fontPaths = resolvePackAssetPaths();
   if (!existsSync(fontPaths.regular) || !existsSync(fontPaths.bold)) {
     throw new Error(`Missing PDF font files at ${fontPaths.regular} and ${fontPaths.bold}`);
   }
@@ -54,11 +57,11 @@ function toBuffer(build: (doc: PDFKit.PDFDocument) => void) {
 }
 
 function primary(doc: PDFKit.PDFDocument) {
-  return doc.fillColor("#0F1C2E");
+  return doc.fillColor(PACK_BRAND.ink);
 }
 
 function secondary(doc: PDFKit.PDFDocument) {
-  return doc.fillColor("#2F3B4C");
+  return doc.fillColor(PACK_BRAND.inkMuted);
 }
 
 function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
@@ -66,7 +69,7 @@ function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
   primary(doc).fontSize(14).font(PACK_FONT_BOLD).text(title);
   doc.moveDown(0.2);
   doc
-    .strokeColor("#D7D9DD")
+    .strokeColor(PACK_BRAND.border)
     .lineWidth(1)
     .moveTo(doc.page.margins.left, doc.y)
     .lineTo(doc.page.width - doc.page.margins.right, doc.y)
@@ -103,7 +106,7 @@ function table(doc: PDFKit.PDFDocument, columns: Column[], rows: string[][]) {
   doc
     .save()
     .rect(x0, y0, columns.reduce((s, c) => s + c.width, 0), headerH)
-    .fill("#F5F6F7")
+    .fill(PACK_BRAND.accentSoft)
     .restore();
 
   let x = x0;
@@ -125,7 +128,7 @@ function table(doc: PDFKit.PDFDocument, columns: Column[], rows: string[][]) {
       cx += col.width;
     });
     doc
-      .strokeColor("#D7D9DD")
+      .strokeColor(PACK_BRAND.border)
       .lineWidth(0.5)
       .moveTo(x0, y + rowH)
       .lineTo(x0 + columns.reduce((s, c) => s + c.width, 0), y + rowH)
@@ -209,11 +212,18 @@ export async function GET(_req: Request, ctx: RouteContext) {
   );
 
   try {
+    const assets = resolvePackAssetPaths();
+    if (!existsSync(assets.logo)) {
+      throw new Error(`Missing PDF logo file at ${assets.logo}`);
+    }
+
     const buffer = await toBuffer((doc) => {
-      // Cover
-      primary(doc).font(PACK_FONT_BOLD).fontSize(20).text("Dalmoy Digital", { align: "left" });
-      secondary(doc).font(PACK_FONT_REGULAR).fontSize(12).text("Project Pack (PDF Export)");
-      doc.moveDown(0.6);
+      // Branded cover header
+      doc.save().rect(0, 0, doc.page.width, 92).fill(PACK_BRAND.shell).restore();
+      doc.image(assets.logo, doc.page.margins.left, 22, { fit: [170, 42] });
+      doc.fillColor(PACK_BRAND.foregroundOnShell).font(PACK_FONT_REGULAR).fontSize(10).text("Project Pack (PDF Export)", doc.page.margins.left, 70);
+      doc.y = 110;
+
       primary(doc).font(PACK_FONT_BOLD).fontSize(16).text(project.name);
       secondary(doc)
         .font(PACK_FONT_REGULAR)

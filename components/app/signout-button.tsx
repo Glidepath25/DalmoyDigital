@@ -10,7 +10,7 @@ export function SignOutButton() {
       onClick={() => signOut({ callbackUrl: "/login" })}
       type="button"
       size="sm"
-      variant="secondary"
+      variant="inverse"
     >
       Sign out
     </Button>
