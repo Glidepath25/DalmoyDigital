@@ -35,9 +35,9 @@ export function DalmoyLogo(props: {
         height={height}
         priority={props.priority}
         src={dalmoyBrand.assets.logoSecondary}
+        unoptimized
         width={width}
       />
     </span>
   );
 }
-
