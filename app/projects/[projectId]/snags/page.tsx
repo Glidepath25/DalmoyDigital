@@ -123,7 +123,7 @@ export default async function SnagsPage(props: PageProps) {
             <Badge tone="neutral">{snags.length} snags</Badge>
             <DownloadLink href={`/api/v1/projects/${project.id}/snags/export`} label="Export CSV" />
             <Link className="dd-link" href={`/projects/${project.id}/inspections`}>
-              Raise via inspection ->
+              Raise via inspection &rarr;
             </Link>
           </div>
         }

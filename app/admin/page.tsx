@@ -18,24 +18,24 @@ export default async function AdminHomePage() {
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionCard subtitle="Create projects and manage delivery." title="Projects">
           <Link className="dd-link" href="/admin/projects">
-            Open project admin ->
+            Open project admin &rarr;
           </Link>
         </SectionCard>
         <SectionCard subtitle="Access levels and account security." title="Users & roles">
           <Link className="dd-link" href="/admin/users">
-            Manage users ->
+            Manage users &rarr;
           </Link>
         </SectionCard>
         <SectionCard subtitle="Dropdown values used throughout the platform." title="Lookups">
           <div className="space-y-2">
             <Link className="dd-link block" href="/admin/clients">
-              Clients ->
+              Clients &rarr;
             </Link>
             <Link className="dd-link block" href="/admin/statuses">
-              Project statuses ->
+              Project statuses &rarr;
             </Link>
             <Link className="dd-link block" href="/admin/lookups">
-              Generic lookup types/options ->
+              Generic lookup types/options &rarr;
             </Link>
           </div>
         </SectionCard>
