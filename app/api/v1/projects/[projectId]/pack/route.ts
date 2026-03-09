@@ -379,7 +379,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
     });
   });
 
-  const body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+  const body = new Uint8Array(buffer);
 
   return new Response(body, {
     headers: {

@@ -20,7 +20,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
 
   try {
     const { buffer } = await readLocalFile(file.storageKey);
-    const body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    const body = new Uint8Array(buffer);
     return new Response(body, {
       headers: {
         "Content-Type": file.mimeType ?? "application/octet-stream",
