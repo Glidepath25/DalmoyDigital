@@ -23,6 +23,7 @@ declare namespace PDFKit {
 
     addPage(): this;
     moveDown(lines?: number): this;
+    registerFont(name: string, src: string): this;
     font(name: string): this;
     fontSize(size: number): this;
     fillColor(color: string): this;
@@ -35,6 +36,7 @@ declare namespace PDFKit {
     restore(): this;
     rect(x: number, y: number, w: number, h: number): this;
     fill(color?: string): this;
+    image(src: string, x?: number, y?: number, options?: { fit?: [number, number] }): this;
 
     // Common PDFKit `text()` overloads used in our codebase.
     text(text: string, options?: TextOptions): this;
