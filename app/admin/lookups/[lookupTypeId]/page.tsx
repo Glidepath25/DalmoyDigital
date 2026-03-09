@@ -51,7 +51,7 @@ export default async function LookupTypeOptionsPage(props: PageProps) {
       <AdminNav active="lookups" />
       <div className="flex items-center justify-between gap-3">
         <Link className="dd-link" href="/admin/lookups">
-          <- Back to lookup types
+          &larr; Back to lookup types
         </Link>
         <p className="text-xs text-brand-secondary">Key: {lookupType.key}</p>
       </div>
