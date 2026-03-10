@@ -62,13 +62,18 @@ npm install
 ```
 
 ### 4) Configure env
-Copy `.env.example` → `.env` and adjust if needed:
-- `DATABASE_URL`
+Copy `.env.example` -> `.env` and adjust if needed:
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `POSTGRES_PORT` (optional; defaults to `5432`)
+- `DATABASE_URL` (host-side fallback for local Prisma/Node runs)
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
 - `UPLOAD_DIR` (optional; defaults to `./uploads` on host or `/app/uploads` in Docker)
 
-Note: when running the app on your host (not in Docker) while Postgres runs in Docker, set `DATABASE_URL` to use `localhost:5432` (not `db:5432`).
+Note: in Docker Compose, the app `DATABASE_URL` is generated from `POSTGRES_*` in `docker-compose.yml`, so app + db credentials stay aligned.
+When running the app on your host (not in Docker) while Postgres runs in Docker, use `localhost:5432` in `DATABASE_URL` (not `db:5432`).
 
 ### 5) Migrate + seed
 ```bash
@@ -136,9 +141,11 @@ cd dalmoy-digital
 cp .env.example .env
 ```
 Edit `.env` and set:
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (single source of truth for docker app + db credentials)
 - `NEXTAUTH_SECRET` to a strong random secret
 - `NEXTAUTH_URL` to `http://SERVER_IP:3000` (or your domain)
-- Confirm `DATABASE_URL` uses `@db:5432` (Docker internal hostname, not localhost)
+
+Do not set separate db credentials in multiple places. Compose derives the app container `DATABASE_URL` from `POSTGRES_*`.
 
 ### 3) Build and start containers
 ```bash
@@ -146,6 +153,12 @@ docker compose up -d --build
 ```
 
 Uploads (attachments + inspection photos) are stored in the named volume `dalmoy_digital_uploads` mounted at `/app/uploads`.
+
+Postgres credentials + volume behavior:
+- `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` are only applied when the Postgres data directory is first initialized.
+- If you change those values later while reusing the existing `dalmoy_digital_pgdata` volume, Postgres keeps the old role/password and auth failures (for example Prisma `P1000`) can occur.
+- Production-safe approach: keep `POSTGRES_*` stable after first deploy, or rotate password explicitly with SQL (`ALTER USER ... WITH PASSWORD ...`) before changing app env values.
+- Non-production reset only (destructive): `docker compose down -v` to recreate the DB cluster with new init credentials.
 
 ### 4) Run Prisma migrations (in Docker)
 ```bash
