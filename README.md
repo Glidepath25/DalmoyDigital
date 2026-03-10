@@ -18,7 +18,7 @@ Phase 1 delivers:
 - Prisma ORM
 - NextAuth (Credentials provider)
 - Tailwind CSS
-- PDF export: `pdfkit` (server-side PDF generation)
+- PDF export: `pdf-lib` (server-side PDF generation)
 
 ## Folder structure (high level)
 - `app/` — UI routes (server components) + route handlers (API)
